@@ -12,6 +12,7 @@ import { Receipt, ViewState } from './types';
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('wall');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [globalReceipts, setGlobalReceipts] = useState<Receipt[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
   const [currentChainId, setCurrentChainId] = useState<string | null>(null);
@@ -50,23 +51,58 @@ const App: React.FC = () => {
         });
 
       updateChainId();
-    }
-
-    // Handle shared proof link
-    const params = new URLSearchParams(window.location.search);
-    const sharedProofId = params.get('proof');
-    if (sharedProofId) {
-      // Set a small timeout to allow receipts to load and Wall to render
-      setTimeout(() => {
-        const element = document.getElementById(`proof-${sharedProofId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.classList.add('ring-4', 'ring-blue-500/50');
-          setTimeout(() => element.classList.remove('ring-4', 'ring-blue-500/50'), 3000);
-        }
-      }, 500);
+      fetchGlobalEvents();
     }
   }, []);
+
+  const fetchGlobalEvents = async () => {
+    const ethereum = (window as any).ethereum;
+    if (!ethereum) return;
+
+    try {
+      // PROOFS_CONTRACT_ADDRESS from PromiseForm or better, a common constant
+      const contractAddress = '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06';
+
+      // ProofAnchored(address,bytes32,uint256)
+      const topic0 = '0x1cbd268b8e8b6ce123f1e941196348c41f6e66016e680a91e550970a247f12e2';
+
+      const logs = await ethereum.request({
+        method: 'eth_getLogs',
+        params: [{
+          fromBlock: '0x138A2D8', // roughly when contract was deployed on Base
+          toBlock: 'latest',
+          address: contractAddress,
+          topics: [topic0]
+        }]
+      });
+
+      const parsedLogs: Receipt[] = logs.map((log: any) => {
+        const creator = '0x' + log.topics[1].slice(26);
+        const hash = log.topics[2];
+        const timestamp = parseInt(log.data, 16) * 1000;
+
+        return {
+          id: log.transactionHash,
+          hash: hash,
+          content: "Protocol Anchored Proof (Metadata Encrypted or Remote)",
+          creator: `Anonymous (${creator.slice(0, 6)}...)`,
+          walletAddress: creator,
+          txHash: log.transactionHash,
+          timestamp: timestamp || Date.now(),
+          deadline: '',
+          isRevealed: false,
+          isAnonymous: true,
+          witnessStatement: "This proof was discovered directly on the Base protocol. The original content remains private to the creator unless shared.",
+          category: 'Other',
+          status: 'fulfilled'
+        } as Receipt;
+      });
+
+      setGlobalReceipts(parsedLogs);
+    } catch (err) {
+      console.error("Global fetch failed", err);
+    }
+  };
 
   const connectWallet = async () => {
     const ethereum = (window as any).ethereum;
@@ -151,11 +187,20 @@ const App: React.FC = () => {
   );
 
   const renderContent = () => {
+    // Merge global proofs with local ones, preferring local content if hashes match
+    const allReceipts = [...receipts];
+    globalReceipts.forEach(global => {
+      const exists = allReceipts.find(r => r.hash === global.hash);
+      if (!exists) {
+        allReceipts.push(global);
+      }
+    });
+
     switch (view) {
       case 'wall':
         return (
           <Wall
-            receipts={receipts}
+            receipts={allReceipts}
             onToggleReveal={toggleReveal}
             onUpdateStatus={updateStatus}
             setView={setView}
