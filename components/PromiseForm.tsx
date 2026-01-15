@@ -103,22 +103,25 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
         throw new Error("This exact word is already enshrined in the Eternal Ledger.");
       }
 
-      // 6. Transaction
-      setSubmittingStep('Anchoring to Base Ledger...');
+      // 6. Inscription: Package Name, Anonymous status, and Content
+      const metadata = {
+        n: isAnonymous ? "" : name,
+        a: isAnonymous,
+        c: content
+      };
 
-      // Prepare data using viem's encodeFunctionData if artifact available, else manual selector
-      // We have artifact from src/contract.json
-      // Inscription: Append hex-encoded content to the end of the transaction data
-      // The contract will ignore this trailing data, but it's saved in the blockchain!
-      const hexContent = Array.from(new TextEncoder().encode(content))
+      const metadataHex = Array.from(new TextEncoder().encode(JSON.stringify(metadata)))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
+
+      // 7. Transaction
+      setSubmittingStep('Anchoring to Base Ledger...');
 
       const data = (encodeFunctionData({
         abi: contractArtifact.abi,
         functionName: 'anchorProof',
         args: [hash as `0x${string}`]
-      }) + hexContent) as `0x${string}`;
+      }) + metadataHex) as `0x${string}`;
 
       const tx = await ethereum.request({
         method: 'eth_sendTransaction',

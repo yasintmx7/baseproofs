@@ -59,50 +59,87 @@ const App: React.FC = () => {
 
   const fetchGlobalEvents = async () => {
     try {
-      // PROOFS_CONTRACT_ADDRESS from PromiseForm or better, a common constant
       const contractAddress = '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06';
-
       const publicClient = createPublicClient({ chain: base, transport: http('https://mainnet.base.org') });
+
+      // 1. Fetch Seal Logs
       const logs = await publicClient.getLogs({
         address: contractAddress as `0x${string}`,
         event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, uint256 timestamp)'),
-        fromBlock: 40827100n, // Start exactly at deployment
+        fromBlock: 40827100n,
         toBlock: 'latest'
       });
 
-      setGlobalReceipts([]); // Clear existing
+      setGlobalReceipts([]);
+
+      // 2. Fetch Deep Transaction History (for Status/Reveal messages)
+      let txHistory: any[] = [];
+      try {
+        const historyRes = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${contractAddress}&startblock=40827100&endblock=99999999&sort=desc`);
+        const historyData = await historyRes.json();
+        if (historyData.status === "1") txHistory = historyData.result;
+      } catch (e) {
+        console.error("Basescan crawler failed", e);
+      }
 
       const parsedLogs: Receipt[] = await Promise.all(logs.map(async (log: any) => {
         const { creator, proofHash, timestamp } = log.args;
 
-        // CRAWL: Fetch the transaction to find the inscribed word
         let inscribedContent = "Protocol Anchored Proof";
+        let inscribedName = "";
+        let isAnon = true;
+        let finalStatus: Receipt['status'] = 'fulfilled';
+
         try {
+          // Decode Metadata from the initial Seal transaction
           const tx = await publicClient.getTransaction({ hash: log.transactionHash });
-          // Inscription starts after selector(4 bytes) + hash(32 bytes) = 36 bytes = 72 chars + 2 for '0x'
           if (tx.input && tx.input.length > 74) {
-            const hex = tx.input.slice(74);
-            const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-            inscribedContent = new TextDecoder().decode(bytes);
+            const rawHex = tx.input.slice(74);
+            try {
+              const bytes = new Uint8Array(rawHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+              const decoded = new TextDecoder().decode(bytes);
+              const meta = JSON.parse(decoded);
+              inscribedContent = meta.c || inscribedContent;
+              isAnon = meta.a;
+              inscribedName = meta.n || "";
+            } catch (e) {
+              // Legacy simple string fallback
+              const bytes = new Uint8Array(rawHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+              inscribedContent = new TextDecoder().decode(bytes);
+            }
           }
-        } catch (e) {
-          console.error("Crawl failed for", log.transactionHash);
-        }
+
+          // Scan txHistory for STATUS or REVEAL messages from this creator
+          const updatesFromCreator = txHistory.filter(tx => tx.from.toLowerCase() === (creator as string).toLowerCase());
+          for (const uTx of updatesFromCreator) {
+            if (uTx.input && (uTx.input.includes('535441545553') || uTx.input.includes('5245564552414c'))) { // STATUS or REVEAL
+              try {
+                const hex = uTx.input.startsWith('0x') ? uTx.input.slice(2) : uTx.input;
+                const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+                const msg = new TextDecoder().decode(bytes);
+                if (msg.includes(`STATUS:FULFILLED:${proofHash}`)) finalStatus = 'fulfilled';
+                if (msg.includes(`STATUS:VOIDED:${proofHash}`)) finalStatus = 'voided';
+              } catch (e) { }
+            }
+          }
+        } catch (e) { }
+
+        const finalDisplayName = inscribedName ? inscribedName : (isAnon ? "Anonymous" : (creator as string));
 
         return {
           id: log.transactionHash,
           hash: proofHash,
           content: inscribedContent,
-          creator: creator,
+          creator: finalDisplayName,
           walletAddress: creator,
           txHash: log.transactionHash,
           timestamp: Number(timestamp) * 1000,
           deadline: '',
-          isRevealed: true, // Always show public words in Global Ledger now
-          isAnonymous: false,
-          witnessStatement: "This proof was discovered directly on the Base protocol using the Inscription crawler.",
+          isRevealed: true, // We show inscribed words
+          isAnonymous: isAnon,
+          witnessStatement: "This proof was discovered directly on the Base protocol Ledger.",
           category: 'Other',
-          status: 'fulfilled'
+          status: finalStatus
         } as Receipt;
       }));
 
@@ -128,8 +165,6 @@ const App: React.FC = () => {
 
   const disconnectWallet = () => {
     setAccount(null);
-    // Note: window.ethereum doesn't have a true 'disconnect' method, 
-    // but clearing state mimics it for the app view.
   };
 
   const handleNetworkSwitch = async (id: string) => {
@@ -146,16 +181,66 @@ const App: React.FC = () => {
     localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
   };
 
-  const updateStatus = (id: string, status: Receipt['status']) => {
+  const updateStatus = async (id: string, status: Receipt['status']) => {
+    // 1. Update Local
     const newReceipts = receipts.map(r => r.id === id ? { ...r, status } : r);
     setReceipts(newReceipts);
     localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
+
+    // 2. Broadcast Global Status Sync
+    const proof = receipts.find(r => r.id === id);
+    if (proof && account) {
+      const statusUpdate = `STATUS:${status.toUpperCase()}:${proof.hash}`;
+      const hexUpdate = Array.from(new TextEncoder().encode(statusUpdate))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const ethereum = (window as any).ethereum;
+      if (ethereum) {
+        try {
+          await ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: account,
+              to: '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06',
+              data: '0x' + hexUpdate,
+              value: '0x0'
+            }]
+          });
+        } catch (e) {
+          console.error("Global status broadcast failed", e);
+        }
+      }
+    }
   };
 
-  const toggleReveal = (id: string) => {
+  const toggleReveal = async (id: string) => {
     const newReceipts = receipts.map(r => r.id === id ? { ...r, isRevealed: !r.isRevealed } : r);
     setReceipts(newReceipts);
     localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
+
+    const proof = receipts.find(r => r.id === id);
+    if (proof && account) {
+      const revealMsg = `REVEAL:${!proof.isRevealed}:${proof.hash}`;
+      const hexReveal = Array.from(new TextEncoder().encode(revealMsg))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const ethereum = (window as any).ethereum;
+      if (ethereum) {
+        try {
+          await ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: account,
+              to: '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06',
+              data: '0x' + hexReveal,
+              value: '0x0'
+            }]
+          });
+        } catch (e) { }
+      }
+    }
   };
 
   const renderConnectGate = (title: string, desc: string) => (
@@ -195,50 +280,25 @@ const App: React.FC = () => {
   );
 
   const renderContent = () => {
-    // Merge global proofs with local ones, preferring local content if hashes match
     const allReceipts = [...receipts];
     globalReceipts.forEach(global => {
       const exists = allReceipts.find(r => r.hash === global.hash);
-      if (!exists) {
-        allReceipts.push(global);
-      }
+      if (!exists) allReceipts.push(global);
     });
 
     switch (view) {
       case 'wall':
-        return (
-          <Wall
-            receipts={allReceipts}
-            onToggleReveal={toggleReveal}
-            onUpdateStatus={updateStatus}
-            setView={setView}
-            account={account}
-          />
-        );
-
+        return <Wall receipts={allReceipts} onToggleReveal={toggleReveal} onUpdateStatus={updateStatus} setView={setView} account={account} />;
       case 'verify':
         return <Verifier receipts={receipts} />;
-
       case 'personal':
         if (!account) return renderConnectGate("Your Private Vault", "To view your personal commitments and finalize your results, you must connect your Web3 identity.");
-        return (
-          <Wall
-            receipts={receipts.filter(r => r.walletAddress.toLowerCase() === account.toLowerCase())}
-            onToggleReveal={toggleReveal}
-            onUpdateStatus={updateStatus}
-            setView={setView}
-            isPersonalView={true}
-            account={account}
-          />
-        );
-
+        return <Wall receipts={receipts.filter(r => r.walletAddress.toLowerCase() === account.toLowerCase())} onToggleReveal={toggleReveal} onUpdateStatus={updateStatus} setView={setView} isPersonalView={true} account={account} />;
       case 'create':
         if (!account) return renderConnectGate("Forge New Proof", "Anchoring a promise to the Global Ledger requires a cryptographic signature. Please connect your wallet to proceed.");
         return <PromiseForm onSave={saveReceipt} setView={setView} account={account} connectWallet={connectWallet} />;
-
       case 'deploy':
         return <Deployer onBack={() => setView('wall')} />;
-
       default:
         return <Wall receipts={receipts} onToggleReveal={toggleReveal} onUpdateStatus={updateStatus} setView={setView} account={account} />;
     }
@@ -246,7 +306,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[#050506] text-neutral-300 selection:bg-blue-500/20 selection:text-blue-300 overflow-hidden">
-      {/* Sidebar Navigation */}
       <nav className={`
         fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
         md:relative md:translate-x-0 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] z-40
@@ -268,143 +327,71 @@ const App: React.FC = () => {
         </div>
 
         <div className="space-y-1.5">
-          <button
-            onClick={() => { setView('wall'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'wall' ? 'bg-white/[0.04] text-white shadow-inner shadow-white/5' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}
-          >
+          <button onClick={() => { setView('wall'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'wall' ? 'bg-white/[0.04] text-white shadow-inner shadow-white/5' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}>
             {view === 'wall' && <div className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full active-tab-glow" />}
-            <History size={20} className={view === 'wall' ? 'text-blue-500' : 'group-hover:text-neutral-300'} />
+            <History size={20} className={view === 'wall' ? 'text-blue-500' : ''} />
             <span>Global Ledger</span>
           </button>
 
-          <button
-            onClick={() => { setView('personal'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'personal' ? 'bg-white/[0.04] text-white shadow-inner shadow-white/5' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}
-          >
+          <button onClick={() => { setView('personal'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'personal' ? 'bg-white/[0.04] text-white shadow-inner shadow-white/5' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}>
             {view === 'personal' && <div className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full active-tab-glow" />}
-            <User size={20} className={view === 'personal' ? 'text-blue-500' : 'group-hover:text-neutral-300'} />
+            <User size={20} className={view === 'personal' ? 'text-blue-500' : ''} />
             <span className="flex-1 text-left">My Vault</span>
             {!account && <Lock size={12} className="text-neutral-700" />}
           </button>
 
-          <button
-            onClick={() => { setView('create'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'create' ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/10' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}
-          >
+          <button onClick={() => { setView('create'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'create' ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/10' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}>
             {view === 'create' && <div className="absolute left-0 w-1 h-6 bg-white/50 rounded-r-full" />}
-            <PlusCircle size={20} className={view === 'create' ? 'text-white' : 'group-hover:text-neutral-300'} />
+            <PlusCircle size={20} className={view === 'create' ? 'text-white' : ''} />
             <span className="flex-1 text-left">Enshrine Proof</span>
           </button>
 
-          <div className="pt-4 pb-2">
-            <div className="h-px bg-white/5 mx-5" />
-          </div>
+          <div className="pt-4 pb-2"><div className="h-px bg-white/5 mx-5" /></div>
 
-          <button
-            onClick={() => { setView('verify'); setIsSidebarOpen(false); }}
-            className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'verify' ? 'bg-white/[0.04] text-white shadow-inner shadow-white/5' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}
-          >
+          <button onClick={() => { setView('verify'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold text-sm relative group ${view === 'verify' ? 'bg-white/[0.04] text-white shadow-inner shadow-white/5' : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.02]'}`}>
             {view === 'verify' && <div className="absolute left-0 w-1 h-6 bg-blue-600 rounded-r-full active-tab-glow" />}
-            <Search size={20} className={view === 'verify' ? 'text-blue-500' : 'group-hover:text-neutral-300'} />
+            <Search size={20} className={view === 'verify' ? 'text-blue-500' : ''} />
             <span>Integrity Check</span>
           </button>
         </div>
 
         <div className="mt-auto space-y-4">
-          {/* Network Switcher */}
           <div className="flex flex-col gap-2">
             <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest px-2">Network Control</span>
             <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => handleNetworkSwitch(BASE_MAINNET_ID)}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-[9px] font-bold transition-all ${currentChainId === BASE_MAINNET_ID ? 'bg-blue-600/20 border-blue-500/50 text-white' : 'bg-white/5 border-white/5 text-neutral-500 hover:border-white/20'}`}
-              >
-                <Activity size={12} />
-                Base Main
-              </button>
-              <button
-                onClick={() => handleNetworkSwitch(BASE_SEPOLIA_ID)}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-[9px] font-bold transition-all ${currentChainId === BASE_SEPOLIA_ID ? 'bg-indigo-600/20 border-indigo-500/50 text-white' : 'bg-white/5 border-white/5 text-neutral-500 hover:border-white/20'}`}
-              >
-                <RefreshCw size={12} />
-                Sepolia
-              </button>
+              <button onClick={() => handleNetworkSwitch(BASE_MAINNET_ID)} className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-[9px] font-bold transition-all ${currentChainId === BASE_MAINNET_ID ? 'bg-blue-600/20 border-blue-500/50 text-white' : 'bg-white/5 border-white/5 text-neutral-500 hover:border-white/20'}`}><Activity size={12} />Base Main</button>
+              <button onClick={() => handleNetworkSwitch(BASE_SEPOLIA_ID)} className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-[9px] font-bold transition-all ${currentChainId === BASE_SEPOLIA_ID ? 'bg-indigo-600/20 border-indigo-500/50 text-white' : 'bg-white/5 border-white/5 text-neutral-500 hover:border-white/20'}`}><RefreshCw size={12} />Sepolia</button>
             </div>
           </div>
 
           <div className="relative group flex flex-col gap-2">
             <div className="flex items-center justify-between px-2">
               <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Identify</span>
-              {account && (
-                <button
-                  onClick={disconnectWallet}
-                  className="text-neutral-600 hover:text-red-400 transition-colors"
-                  title="Disconnect Wallet"
-                >
-                  <LogOut size={14} />
-                </button>
-              )}
+              {account && <button onClick={disconnectWallet} className="text-neutral-600 hover:text-red-400 transition-colors"><LogOut size={14} /></button>}
             </div>
-            <button
-              onClick={account ? undefined : connectWallet}
-              className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest relative z-10 ${account ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-white/5 border-white/10 text-neutral-400 hover:border-blue-500/30 hover:text-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <Wallet size={16} />
-                {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Sign Identity'}
-              </div>
+            <button onClick={account ? undefined : connectWallet} className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest relative z-10 ${account ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-white/5 border-white/10 text-neutral-400 hover:border-blue-500/30 hover:text-white'}`}>
+              <div className="flex items-center gap-3"><Wallet size={16} />{account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Sign Identity'}</div>
               {account && <ShieldCheck size={14} className="text-green-500/50" />}
             </button>
-            {!account && (
-              <div className="absolute inset-0 bg-blue-600/20 blur-xl opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none" />
-            )}
           </div>
 
           <div className="p-6 bg-white/[0.02] rounded-[2rem] border border-white/[0.03] relative overflow-hidden group hidden md:block">
             <div className="absolute inset-0 shimmer opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex items-center gap-3 mb-3 text-blue-500">
-              <Sparkles size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Base Protocol</span>
-            </div>
-            <p className="text-[11px] text-neutral-500 leading-relaxed font-medium mb-4">
-              Proofs are final. Once anchored, status changes are permanent. No deletion possible.
-            </p>
-
-            <button
-              onClick={() => { setView('deploy'); setIsSidebarOpen(false); }}
-              className="w-full text-[9px] font-black uppercase tracking-widest text-neutral-600 hover:text-white transition-colors border-t border-white/5 pt-4 text-left"
-            >
-              Deploy Contracts
-            </button>
+            <div className="flex items-center gap-3 mb-3 text-blue-500"><Sparkles size={16} /><span className="text-[10px] font-black uppercase tracking-widest">Base Protocol</span></div>
+            <p className="text-[11px] text-neutral-500 leading-relaxed font-medium mb-4">Proofs are final. Once anchored, status changes are permanent.</p>
+            <button onClick={() => setView('deploy')} className="w-full text-[9px] font-black uppercase tracking-widest text-neutral-600 hover:text-white transition-colors border-t border-white/5 pt-4 text-left">Deploy Contracts</button>
           </div>
         </div>
       </nav>
 
       <main className="flex-1 relative overflow-hidden h-screen flex flex-col">
-        {/* Mobile Navbar */}
         <div className="md:hidden flex items-center justify-between p-6 bg-[#050506]/80 backdrop-blur-xl border-b border-white/[0.05] z-30">
-          <div className="flex items-center gap-3" onClick={() => setView('wall')}>
-            <ShieldCheck className="text-blue-500" size={24} />
-            <span className="font-bold text-lg tracking-tighter text-white">BaseProofs</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-neutral-400 bg-white/5 rounded-xl hover:text-white transition-all">
-              <Menu size={24} />
-            </button>
-          </div>
+          <div className="flex items-center gap-3" onClick={() => setView('wall')}><ShieldCheck className="text-blue-500" size={24} /><span className="font-bold text-lg tracking-tighter text-white">BaseProofs</span></div>
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-neutral-400 bg-white/5 rounded-xl hover:text-white transition-all"><Menu size={24} /></button>
         </div>
-
-        {/* Scrollable Container */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth custom-scrollbar -webkit-overflow-scrolling-touch touch-pan-y">
-          <div className="max-w-6xl mx-auto px-6 py-12 md:py-20 lg:px-16 pb-32">
-            {renderContent()}
-          </div>
-        </div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar"><div className="max-w-6xl mx-auto px-6 py-12 md:py-20">{renderContent()}</div></div>
       </main>
-
-      {/* Background Decor */}
-      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-600/[0.03] blur-[120px] rounded-full -z-10 pointer-events-none animate-pulse" />
-      <div className="fixed bottom-0 left-0 w-[300px] h-[300px] bg-indigo-600/[0.03] blur-[100px] rounded-full -z-10 pointer-events-none" />
+      <div className="fixed top-0 right-0 w-[500px] h-[500px] bg-blue-600/[0.03] blur-[120px] rounded-full -z-10 pointer-events-none" />
     </div>
   );
 };
