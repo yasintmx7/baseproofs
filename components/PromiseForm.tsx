@@ -85,7 +85,25 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
         generateSeal(content)
       ]);
 
-      // 5. Transaction
+      // 5. Duplicate Pre-Check (Prevent high fee warnings)
+      setSubmittingStep('Scanning Ledger for duplicates...');
+      const checkData = encodeFunctionData({
+        abi: contractArtifact.abi,
+        functionName: 'verifyProof',
+        args: [hash as `0x${string}`]
+      });
+
+      const checkResult = await ethereum.request({
+        method: 'eth_call',
+        params: [{ to: targetAddress, data: checkData }, 'latest']
+      });
+
+      // If the result starts with 1 (bool true), it exists
+      if (checkResult && checkResult.includes('0000000000000000000000000000000000000000000000000000000000000001')) {
+        throw new Error("This exact word is already enshrined in the Eternal Ledger.");
+      }
+
+      // 6. Transaction
       setSubmittingStep('Anchoring to Base Ledger...');
 
       // Prepare data using viem's encodeFunctionData if artifact available, else manual selector
