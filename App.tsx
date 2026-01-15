@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, ShieldCheck, History, Menu, X, Search, Sparkles, Wallet, Globe, ArrowRight, User, Lock } from 'lucide-react';
+import { PlusCircle, ShieldCheck, History, Menu, X, Search, Sparkles, Wallet, Globe, ArrowRight, User, Lock, LogOut, ChevronDown, Activity, RefreshCw } from 'lucide-react';
+import { checkIsOnBase, switchToBase, BASE_MAINNET_ID, BASE_SEPOLIA_ID, LOCALHOST_ID } from './utils/network';
 import PromiseForm from './components/PromiseForm';
 import Wall from './components/Wall';
 import Verifier from './components/Verifier';
@@ -13,6 +14,15 @@ const App: React.FC = () => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
+  const [currentChainId, setCurrentChainId] = useState<string | null>(null);
+
+  const updateChainId = async () => {
+    const ethereum = (window as any).ethereum;
+    if (ethereum) {
+      const chainId = await ethereum.request({ method: 'eth_chainId' });
+      setCurrentChainId(chainId);
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('baseproofs_receipts_v1');
@@ -30,10 +40,16 @@ const App: React.FC = () => {
         setAccount(accounts.length > 0 ? accounts[0] : null);
       });
 
+      ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
+
       ethereum.request({ method: 'eth_accounts' })
         .then((accounts: string[]) => {
           if (accounts.length > 0) setAccount(accounts[0]);
         });
+
+      updateChainId();
     }
 
     // Handle shared proof link
@@ -63,6 +79,20 @@ const App: React.FC = () => {
       }
     } else {
       alert("Please install MetaMask or another Web3 wallet.");
+    }
+  };
+
+  const disconnectWallet = () => {
+    setAccount(null);
+    // Note: window.ethereum doesn't have a true 'disconnect' method, 
+    // but clearing state mimics it for the app view.
+  };
+
+  const handleNetworkSwitch = async (id: string) => {
+    try {
+      await switchToBase(id);
+    } catch (err) {
+      console.error("Switch failed", err);
     }
   };
 
@@ -227,14 +257,50 @@ const App: React.FC = () => {
           </button>
         </div>
 
-        <div className="mt-auto space-y-6">
-          <div className="relative group">
+        <div className="mt-auto space-y-4">
+          {/* Network Switcher */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest px-2">Network Control</span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleNetworkSwitch(BASE_MAINNET_ID)}
+                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-[9px] font-bold transition-all ${currentChainId === BASE_MAINNET_ID ? 'bg-blue-600/20 border-blue-500/50 text-white' : 'bg-white/5 border-white/5 text-neutral-500 hover:border-white/20'}`}
+              >
+                <Activity size={12} />
+                Base Main
+              </button>
+              <button
+                onClick={() => handleNetworkSwitch(BASE_SEPOLIA_ID)}
+                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-[9px] font-bold transition-all ${currentChainId === BASE_SEPOLIA_ID ? 'bg-indigo-600/20 border-indigo-500/50 text-white' : 'bg-white/5 border-white/5 text-neutral-500 hover:border-white/20'}`}
+              >
+                <RefreshCw size={12} />
+                Sepolia
+              </button>
+            </div>
+          </div>
+
+          <div className="relative group flex flex-col gap-2">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Identify</span>
+              {account && (
+                <button
+                  onClick={disconnectWallet}
+                  className="text-neutral-600 hover:text-red-400 transition-colors"
+                  title="Disconnect Wallet"
+                >
+                  <LogOut size={14} />
+                </button>
+              )}
+            </div>
             <button
               onClick={account ? undefined : connectWallet}
-              className={`w-full flex items-center gap-3 p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest relative z-10 ${account ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-white/5 border-white/10 text-neutral-400 hover:border-blue-500/30 hover:text-white'}`}
+              className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-[10px] font-black uppercase tracking-widest relative z-10 ${account ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-white/5 border-white/10 text-neutral-400 hover:border-blue-500/30 hover:text-white'}`}
             >
-              <Wallet size={16} />
-              {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Sign Identity'}
+              <div className="flex items-center gap-3">
+                <Wallet size={16} />
+                {account ? `${account.slice(0, 6)}...${account.slice(-4)}` : 'Sign Identity'}
+              </div>
+              {account && <ShieldCheck size={14} className="text-green-500/50" />}
             </button>
             {!account && (
               <div className="absolute inset-0 bg-blue-600/20 blur-xl opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none" />
