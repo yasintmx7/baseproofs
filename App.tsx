@@ -10,6 +10,8 @@ import Verifier from './components/Verifier';
 import Header from './components/Header';
 import Deployer from './components/Deployer';
 import { Receipt, ViewState } from './types';
+import contractArtifact from './src/contract.json';
+import { encodeFunctionData } from 'viem';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('wall');
@@ -70,19 +72,29 @@ const App: React.FC = () => {
         toBlock: 'latest'
       });
 
-      setGlobalReceipts([]);
+      // 2. Separate Seals from Status Updates
+      const seals: any[] = [];
+      const statusUpdates: any[] = [];
 
-      // 2. Fetch Deep Transaction History (for Status/Reveal messages)
-      let txHistory: any[] = [];
-      try {
-        const historyRes = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${contractAddress}&startblock=40827100&endblock=99999999&sort=desc`);
-        const historyData = await historyRes.json();
-        if (historyData.status === "1") txHistory = historyData.result;
-      } catch (e) {
-        console.error("Basescan crawler failed", e);
-      }
+      await Promise.all(logs.map(async (log: any) => {
+        const tx = await publicClient.getTransaction({ hash: log.transactionHash });
+        if (tx.input && tx.input.length > 74) {
+          const rawHex = tx.input.slice(74);
+          try {
+            const bytes = new Uint8Array(rawHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+            const decoded = new TextDecoder().decode(bytes);
+            if (decoded.startsWith('STATUS:')) {
+              statusUpdates.push({ msg: decoded, creator: log.args.creator });
+            } else {
+              seals.push(log);
+            }
+          } catch (e) { seals.push(log); }
+        } else {
+          seals.push(log);
+        }
+      }));
 
-      const parsedLogs: Receipt[] = await Promise.all(logs.map(async (log: any) => {
+      const parsedLogs: Receipt[] = await Promise.all(seals.map(async (log: any) => {
         const { creator, proofHash, timestamp } = log.args;
 
         let inscribedContent = "Protocol Anchored Proof";
@@ -91,7 +103,6 @@ const App: React.FC = () => {
         let finalStatus: Receipt['status'] = 'fulfilled';
 
         try {
-          // Decode Metadata from the initial Seal transaction
           const tx = await publicClient.getTransaction({ hash: log.transactionHash });
           if (tx.input && tx.input.length > 74) {
             const rawHex = tx.input.slice(74);
@@ -103,25 +114,18 @@ const App: React.FC = () => {
               isAnon = meta.a;
               inscribedName = meta.n || "";
             } catch (e) {
-              // Legacy simple string fallback
               const bytes = new Uint8Array(rawHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
               inscribedContent = new TextDecoder().decode(bytes);
             }
           }
 
-          // Scan txHistory for STATUS or REVEAL messages from this creator
-          const updatesFromCreator = txHistory.filter(tx => tx.from.toLowerCase() === (creator as string).toLowerCase());
-          for (const uTx of updatesFromCreator) {
-            if (uTx.input && (uTx.input.includes('535441545553') || uTx.input.includes('52455645414c'))) { // STATUS or REVEAL
-              try {
-                const hex = uTx.input.startsWith('0x') ? uTx.input.slice(2) : uTx.input;
-                const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
-                const msg = new TextDecoder().decode(bytes);
-                if (msg.includes(`STATUS:FULFILLED:${proofHash}`)) finalStatus = 'fulfilled';
-                if (msg.includes(`STATUS:VOIDED:${proofHash}`)) finalStatus = 'voided';
-              } catch (e) { }
+          // Apply recorded status updates for this specific proof hash
+          statusUpdates.forEach(update => {
+            if (update.creator.toLowerCase() === creator.toLowerCase()) {
+              if (update.msg.includes(`STATUS:FULFILLED:${proofHash}`)) finalStatus = 'fulfilled';
+              if (update.msg.includes(`STATUS:VOIDED:${proofHash}`)) finalStatus = 'voided';
             }
-          }
+          });
         } catch (e) { }
 
         const finalDisplayName = inscribedName ? inscribedName : (isAnon ? "Anonymous" : (creator as string));
@@ -135,7 +139,7 @@ const App: React.FC = () => {
           txHash: log.transactionHash,
           timestamp: Number(timestamp) * 1000,
           deadline: '',
-          isRevealed: true, // We show inscribed words
+          isRevealed: true,
           isAnonymous: isAnon,
           witnessStatement: "This proof was discovered directly on the Base protocol Ledger.",
           category: 'Other',
@@ -187,20 +191,25 @@ const App: React.FC = () => {
     setReceipts(newReceipts);
     localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
 
-    // 2. Broadcast to Blockchain (Global Sync) - Valid Call for Low Gas (<$0.01)
+    // 2. Broadcast to Blockchain (Global Sync) - Low Gas (<$0.01)
     const proof = receipts.find(r => r.id === id);
     if (proof && account) {
-      // Create a unique hash for this status update so it doesn't trigger "Duplicate" error
-      // format: STATUS:VOIDED:0x123...:TIMESTAMP
+      // Inscribe a new anchor with the status update
       const statusUpdate = `STATUS:${status.toUpperCase()}:${proof.hash}:${Date.now()}`;
       const hexUpdate = Array.from(new TextEncoder().encode(statusUpdate))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 
-      // We'll use a dummy hash for the contract call to keep it valid
-      // selector for anchorProof(bytes32) is 0xd756247c
-      const dummyHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
-      const data = `0xd756247c${dummyHash.slice(2)}${hexUpdate}` as `0x${string}`;
+      // Create a UNIQUE random hash for this transaction so it NEVER reverts
+      const uniqueStatusId = '0x' + Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const data = (encodeFunctionData({
+        abi: contractArtifact.abi,
+        functionName: 'anchorProof',
+        args: [uniqueStatusId as `0x${string}`]
+      }) + hexUpdate) as `0x${string}`;
 
       const ethereum = (window as any).ethereum;
       if (ethereum) {
