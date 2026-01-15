@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Receipt, ViewState } from '../types';
 import { shortenHash } from '../utils/crypto';
-import { 
-  Clock, Eye, EyeOff, Award, Quote, CheckCircle2, 
-  Target, Calendar, PlusCircle, ArrowRight, Zap, 
+import {
+  Clock, Eye, EyeOff, Award, Quote, CheckCircle2,
+  Target, Calendar, PlusCircle, ArrowRight, Zap,
   Search, Filter, SortAsc, X, SlidersHorizontal, CheckCircle, ExternalLink, User, Flame, Globe, XCircle, Share2, Check, AlertTriangle, ShieldCheck, Activity, Info
 } from 'lucide-react';
 import Header from './Header';
@@ -87,15 +87,15 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
     let result = [...receipts];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(r => 
-        r.creator.toLowerCase().includes(q) || 
+      result = result.filter(r =>
+        r.creator.toLowerCase().includes(q) ||
         r.content.toLowerCase().includes(q) ||
         r.hash.toLowerCase().includes(q)
       );
     }
     if (activeCategory !== 'All') result = result.filter(r => r.category === activeCategory);
     if (activeStatus !== 'All') result = result.filter(r => r.status === activeStatus);
-    
+
     result.sort((a, b) => {
       if (sortBy === 'newest') return b.timestamp - a.timestamp;
       if (sortBy === 'oldest') return a.timestamp - b.timestamp;
@@ -115,15 +115,15 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
   const renderReceiptCard = (receipt: Receipt, isFeatured: boolean = false) => {
     const isOwner = account?.toLowerCase() === receipt.walletAddress.toLowerCase();
     const isCopied = copiedId === receipt.id;
-    
+
     return (
-      <div 
-        key={receipt.id} 
+      <div
+        key={receipt.id}
         id={`proof-${receipt.id}`}
         className={`group glass-card rounded-[2rem] p-5 md:p-6 transition-all duration-700 relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 ${isFeatured ? 'md:col-span-2 border-blue-500/30 ring-1 ring-blue-500/10 shadow-2xl shadow-blue-500/5' : ''}`}
       >
         <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] opacity-15 transition-all duration-700 pointer-events-none ${receipt.status === 'fulfilled' ? 'bg-green-500' : receipt.status === 'voided' ? 'bg-red-500' : 'bg-blue-500'}`} />
-        
+
         {isFeatured && (
           <div className="absolute top-6 right-6 flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest shadow-xl shadow-blue-600/20 animate-pulse z-20">
             <Flame size={12} />
@@ -145,7 +145,11 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
             <div className="flex flex-col">
               <h4 className={`${isFeatured ? 'text-sm' : 'text-xs'} font-bold text-white leading-none mb-1.5 flex items-center gap-2`}>
                 {receipt.isAnonymous ? 'Anonymous' : receipt.creator}
-                {isOwner && <span className="bg-blue-500/20 text-blue-400 text-[7px] px-1.5 py-0.5 rounded uppercase font-black tracking-widest border border-blue-500/20">You</span>}
+                {isOwner && (
+                  <span className="flex items-center gap-1.5 bg-blue-500 text-white text-[7px] px-2 py-0.5 rounded-full uppercase font-black tracking-widest shadow-lg shadow-blue-500/20">
+                    <User size={8} /> Me
+                  </span>
+                )}
               </h4>
               <div className="flex items-center gap-2">
                 <span className="text-[8px] text-neutral-500 font-black mono tracking-tight">
@@ -176,13 +180,13 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
         <div className="flex flex-wrap items-center gap-3 mb-6 relative z-10">
           {receipt.status === 'active' && receipt.deadline && <Countdown date={receipt.deadline} />}
           <div className="flex items-center gap-1.5 px-2 py-1 bg-white/[0.03] border border-white/5 rounded-md">
-             <Clock size={10} className="text-neutral-600" />
-             <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest">{new Date(receipt.timestamp).toLocaleDateString()}</span>
+            <Clock size={10} className="text-neutral-600" />
+            <span className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest">{new Date(receipt.timestamp).toLocaleDateString()}</span>
           </div>
           {receipt.txHash && (
-            <a 
-              href={`https://basescan.org/tx/${receipt.txHash}`} 
-              target="_blank" 
+            <a
+              href={`https://basescan.org/tx/${receipt.txHash}`}
+              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-md text-[8px] text-blue-400 font-bold uppercase hover:bg-blue-500/20 transition-all"
             >
@@ -193,14 +197,14 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
 
         <div className="flex items-center justify-between pt-5 border-t border-white/5 relative z-10">
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => onToggleReveal(receipt.id)}
               className="text-[9px] font-black uppercase tracking-widest text-neutral-500 hover:text-blue-400 flex items-center gap-2 transition-colors"
             >
               {receipt.isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
               {receipt.isRevealed ? 'Mask' : 'Reveal'}
             </button>
-            <button 
+            <button
               onClick={() => handleCopyLink(receipt.id)}
               className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isCopied ? 'text-green-500' : 'text-neutral-500 hover:text-white'}`}
             >
@@ -212,14 +216,14 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
           <div className="flex gap-2">
             {isOwner && onUpdateStatus && receipt.status === 'active' && (
               <>
-                <button 
+                <button
                   onClick={() => initiateStatusUpdate(receipt.id, 'voided')}
                   className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/5 active:scale-95"
                 >
                   <XCircle size={14} />
                   I Failed
                 </button>
-                <button 
+                <button
                   onClick={() => initiateStatusUpdate(receipt.id, 'fulfilled')}
                   className="flex items-center gap-2 px-4 py-2 bg-green-500/10 border border-green-500/20 rounded-xl text-[9px] font-black uppercase tracking-widest text-green-500 hover:bg-green-500 hover:text-white transition-all shadow-lg shadow-green-500/5 active:scale-95"
                 >
@@ -228,12 +232,12 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
                 </button>
               </>
             )}
-            
+
             {(receipt.status !== 'active' || (!isOwner && !isPersonalView)) && (
-               <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest italic ${receipt.status === 'fulfilled' ? 'text-green-500 bg-green-500/5' : receipt.status === 'voided' ? 'text-red-500 bg-red-500/5' : 'text-blue-500 bg-blue-500/5'}`}>
-                 {receipt.status === 'fulfilled' ? <CheckCircle size={12} /> : receipt.status === 'voided' ? <XCircle size={12} /> : <Globe size={12} />}
-                 {receipt.status === 'active' ? 'Live Proof' : receipt.status.toUpperCase()}
-               </div>
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest italic ${receipt.status === 'fulfilled' ? 'text-green-500 bg-green-500/5' : receipt.status === 'voided' ? 'text-red-500 bg-red-500/5' : 'text-blue-500 bg-blue-500/5'}`}>
+                {receipt.status === 'fulfilled' ? <CheckCircle size={12} /> : receipt.status === 'voided' ? <XCircle size={12} /> : <Globe size={12} />}
+                {receipt.status === 'active' ? 'Live Proof' : receipt.status.toUpperCase()}
+              </div>
             )}
           </div>
         </div>
@@ -285,11 +289,11 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
                   Enshrine Now <ArrowRight size={18} />
                 </button>
                 <div className="flex items-center gap-3 text-neutral-500 hover:text-white transition-colors cursor-help group/info">
-                   <Info size={16} />
-                   <span className="text-[10px] font-black uppercase tracking-widest">How it Works</span>
-                   <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-neutral-900 border border-white/10 rounded-2xl text-[11px] text-neutral-400 opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none shadow-2xl z-40 leading-relaxed">
-                     Your promise is hashed (SHA-256) locally, then witnessed by our Grand Notary AI, and finally a proof transaction is sent to Base Mainnet.
-                   </div>
+                  <Info size={16} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">How it Works</span>
+                  <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-neutral-900 border border-white/10 rounded-2xl text-[11px] text-neutral-400 opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none shadow-2xl z-40 leading-relaxed">
+                    Your promise is hashed (SHA-256) locally, then witnessed by our Grand Notary AI, and finally a proof transaction is sent to Base Mainnet.
+                  </div>
                 </div>
               </div>
             </div>
@@ -313,24 +317,24 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
           </div>
           <div className="h-4 w-px bg-white/10 hidden md:block" />
           <div className="flex items-center gap-4">
-             <span className="text-[9px] uppercase text-neutral-600 font-black tracking-widest">Total Words Anchored</span>
-             <span className="text-lg font-bold text-white mono">{stats.total.toString().padStart(3, '0')}</span>
+            <span className="text-[9px] uppercase text-neutral-600 font-black tracking-widest">Total Words Anchored</span>
+            <span className="text-lg font-bold text-white mono">{stats.total.toString().padStart(3, '0')}</span>
           </div>
           <div className="flex items-center gap-4">
-             <span className="text-[9px] uppercase text-neutral-600 font-black tracking-widest">Global Integrity</span>
-             <span className="text-lg font-bold text-blue-500 mono">{stats.integrity}%</span>
+            <span className="text-[9px] uppercase text-neutral-600 font-black tracking-widest">Global Integrity</span>
+            <span className="text-lg font-bold text-blue-500 mono">{stats.integrity}%</span>
           </div>
           <div className="flex items-center gap-4 ml-auto">
-             <span className="text-[9px] uppercase text-neutral-600 font-black tracking-widest">Words Delivered</span>
-             <span className="text-lg font-bold text-green-500 mono">{stats.fulfilled}</span>
+            <span className="text-[9px] uppercase text-neutral-600 font-black tracking-widest">Words Delivered</span>
+            <span className="text-lg font-bold text-green-500 mono">{stats.fulfilled}</span>
           </div>
         </div>
       )}
 
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-        <Header 
-          title={isPersonalView ? "Your Private Vault" : "Global Word Ledger"} 
-          subtitle={isPersonalView ? "Your private sanctuary of immutable word and outcome." : "The public stream of every commitment anchored to history."} 
+        <Header
+          title={isPersonalView ? "Your Private Vault" : "Global Word Ledger"}
+          subtitle={isPersonalView ? "Your private sanctuary of immutable word and outcome." : "The public stream of every commitment anchored to history."}
         />
         <div className="flex items-center gap-4 bg-white/[0.02] border border-white/[0.05] p-4 rounded-3xl backdrop-blur-md shadow-2xl shadow-black/20">
           <div className="flex flex-col">
@@ -350,7 +354,7 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 group-focus-within:text-blue-500 transition-colors" size={16} />
-              <input 
+              <input
                 type="text"
                 placeholder="Locate word in ledger..."
                 value={searchQuery}
@@ -406,8 +410,8 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
             {isPersonalView ? "Your Legacy Begins Now" : "The Ledger Awaits its First Word"}
           </h3>
           <p className="text-neutral-500 text-base max-w-sm mb-12 leading-relaxed">
-            {isPersonalView 
-              ? "You haven't anchored any words yet. Your integrity starts with the first enshrinement." 
+            {isPersonalView
+              ? "You haven't anchored any words yet. Your integrity starts with the first enshrinement."
               : "No words have been anchored yet. Be the first to enshrine history on the Base Protocol."}
           </p>
           <div className="flex flex-col gap-4">

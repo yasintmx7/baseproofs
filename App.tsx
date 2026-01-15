@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, ShieldCheck, History, Menu, X, Search, Sparkles, Wallet, Globe, ArrowRight, User, Lock, LogOut, ChevronDown, Activity, RefreshCw } from 'lucide-react';
-import { checkIsOnBase, switchToBase, BASE_MAINNET_ID, BASE_SEPOLIA_ID, LOCALHOST_ID } from './utils/network';
+import { checkIsOnBase, switchToBase, BASE_MAINNET_ID, BASE_SEPOLIA_ID, LOCALHOST_ID, TARGET_CHAIN_ID } from './utils/network';
+import { createPublicClient, http, parseAbiItem } from 'viem';
+import { base } from 'viem/chains';
 import PromiseForm from './components/PromiseForm';
 import Wall from './components/Wall';
 import Verifier from './components/Verifier';
@@ -56,43 +58,32 @@ const App: React.FC = () => {
   }, []);
 
   const fetchGlobalEvents = async () => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) return;
-
     try {
       // PROOFS_CONTRACT_ADDRESS from PromiseForm or better, a common constant
       const contractAddress = '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06';
 
-      // ProofAnchored(address,bytes32,uint256)
-      const topic0 = '0x1cbd268b8e8b6ce123f1e941196348c41f6e66016e680a91e550970a247f12e2';
-
-      const logs = await ethereum.request({
-        method: 'eth_getLogs',
-        params: [{
-          fromBlock: '0x138A2D8', // roughly when contract was deployed on Base
-          toBlock: 'latest',
-          address: contractAddress,
-          topics: [topic0]
-        }]
+      const publicClient = createPublicClient({ chain: base, transport: http('https://mainnet.base.org') });
+      const logs = await publicClient.getLogs({
+        address: contractAddress as `0x${string}`,
+        event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, uint256 timestamp)'),
+        fromBlock: 24700000n,
+        toBlock: 'latest'
       });
 
       const parsedLogs: Receipt[] = logs.map((log: any) => {
-        const creator = '0x' + log.topics[1].slice(26);
-        const hash = log.topics[2];
-        const timestamp = parseInt(log.data, 16) * 1000;
-
+        const { creator, proofHash, timestamp } = log.args;
         return {
           id: log.transactionHash,
-          hash: hash,
-          content: "Protocol Anchored Proof (Metadata Encrypted or Remote)",
-          creator: `Anonymous (${creator.slice(0, 6)}...)`,
+          hash: proofHash,
+          content: "Protocol Anchored Proof",
+          creator: `Signer (${creator.slice(0, 6)}...)`,
           walletAddress: creator,
           txHash: log.transactionHash,
-          timestamp: timestamp || Date.now(),
+          timestamp: Number(timestamp) * 1000,
           deadline: '',
           isRevealed: false,
           isAnonymous: true,
-          witnessStatement: "This proof was discovered directly on the Base protocol. The original content remains private to the creator unless shared.",
+          witnessStatement: "This proof was discovered directly on the Base protocol. The original content is hashed and anchored forever.",
           category: 'Other',
           status: 'fulfilled'
         } as Receipt;
