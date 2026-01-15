@@ -112,7 +112,7 @@ const App: React.FC = () => {
           // Scan txHistory for STATUS or REVEAL messages from this creator
           const updatesFromCreator = txHistory.filter(tx => tx.from.toLowerCase() === (creator as string).toLowerCase());
           for (const uTx of updatesFromCreator) {
-            if (uTx.input && (uTx.input.includes('535441545553') || uTx.input.includes('5245564552414c'))) { // STATUS or REVEAL
+            if (uTx.input && (uTx.input.includes('535441545553') || uTx.input.includes('52455645414c'))) { // STATUS or REVEAL
               try {
                 const hex = uTx.input.startsWith('0x') ? uTx.input.slice(2) : uTx.input;
                 const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
@@ -182,18 +182,25 @@ const App: React.FC = () => {
   };
 
   const updateStatus = async (id: string, status: Receipt['status']) => {
-    // 1. Update Local
+    // 1. Update Local Storage
     const newReceipts = receipts.map(r => r.id === id ? { ...r, status } : r);
     setReceipts(newReceipts);
     localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
 
-    // 2. Broadcast Global Status Sync
+    // 2. Broadcast to Blockchain (Global Sync) - Valid Call for Low Gas (<$0.01)
     const proof = receipts.find(r => r.id === id);
     if (proof && account) {
-      const statusUpdate = `STATUS:${status.toUpperCase()}:${proof.hash}`;
+      // Create a unique hash for this status update so it doesn't trigger "Duplicate" error
+      // format: STATUS:VOIDED:0x123...:TIMESTAMP
+      const statusUpdate = `STATUS:${status.toUpperCase()}:${proof.hash}:${Date.now()}`;
       const hexUpdate = Array.from(new TextEncoder().encode(statusUpdate))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
+
+      // We'll use a dummy hash for the contract call to keep it valid
+      // selector for anchorProof(bytes32) is 0xd756247c
+      const dummyHash = '0x0000000000000000000000000000000000000000000000000000000000000001';
+      const data = `0xd756247c${dummyHash.slice(2)}${hexUpdate}` as `0x${string}`;
 
       const ethereum = (window as any).ethereum;
       if (ethereum) {
@@ -203,7 +210,7 @@ const App: React.FC = () => {
             params: [{
               from: account,
               to: '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06',
-              data: '0x' + hexUpdate,
+              data,
               value: '0x0'
             }]
           });
