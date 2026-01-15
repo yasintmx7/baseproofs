@@ -214,33 +214,10 @@ const App: React.FC = () => {
     }
   };
 
-  const toggleReveal = async (id: string) => {
+  const toggleReveal = (id: string) => {
     const newReceipts = receipts.map(r => r.id === id ? { ...r, isRevealed: !r.isRevealed } : r);
     setReceipts(newReceipts);
     localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
-
-    const proof = receipts.find(r => r.id === id);
-    if (proof && account) {
-      const revealMsg = `REVEAL:${!proof.isRevealed}:${proof.hash}`;
-      const hexReveal = Array.from(new TextEncoder().encode(revealMsg))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-
-      const ethereum = (window as any).ethereum;
-      if (ethereum) {
-        try {
-          await ethereum.request({
-            method: 'eth_sendTransaction',
-            params: [{
-              from: account,
-              to: '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06',
-              data: '0x' + hexReveal,
-              value: '0x0'
-            }]
-          });
-        } catch (e) { }
-      }
-    }
   };
 
   const renderConnectGate = (title: string, desc: string) => (
