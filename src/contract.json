@@ -37,11 +37,6 @@
           "internalType": "bytes32",
           "name": "_proofHash",
           "type": "bytes32"
-        },
-        {
-          "internalType": "string",
-          "name": "_content",
-          "type": "string"
         }
       ],
       "name": "anchorProof",

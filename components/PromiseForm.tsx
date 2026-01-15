@@ -108,11 +108,17 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
 
       // Prepare data using viem's encodeFunctionData if artifact available, else manual selector
       // We have artifact from src/contract.json
-      const data = encodeFunctionData({
+      // Inscription: Append hex-encoded content to the end of the transaction data
+      // The contract will ignore this trailing data, but it's saved in the blockchain!
+      const hexContent = Array.from(new TextEncoder().encode(content))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const data = (encodeFunctionData({
         abi: contractArtifact.abi,
         functionName: 'anchorProof',
-        args: [hash as `0x${string}`, content]
-      });
+        args: [hash as `0x${string}`]
+      }) + hexContent) as `0x${string}`;
 
       const tx = await ethereum.request({
         method: 'eth_sendTransaction',

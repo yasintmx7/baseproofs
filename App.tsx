@@ -70,25 +70,41 @@ const App: React.FC = () => {
         toBlock: 'latest'
       });
 
-      const parsedLogs: Receipt[] = logs.map((log: any) => {
-        const { creator, proofHash, content, timestamp } = log.args;
+      setGlobalReceipts([]); // Clear existing
+
+      const parsedLogs: Receipt[] = await Promise.all(logs.map(async (log: any) => {
+        const { creator, proofHash, timestamp } = log.args;
+
+        // CRAWL: Fetch the transaction to find the inscribed word
+        let inscribedContent = "Protocol Anchored Proof";
+        try {
+          const tx = await publicClient.getTransaction({ hash: log.transactionHash });
+          // Inscription starts after selector(4 bytes) + hash(32 bytes) = 36 bytes = 72 chars + 2 for '0x'
+          if (tx.input && tx.input.length > 74) {
+            const hex = tx.input.slice(74);
+            const bytes = new Uint8Array(hex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
+            inscribedContent = new TextDecoder().decode(bytes);
+          }
+        } catch (e) {
+          console.error("Crawl failed for", log.transactionHash);
+        }
 
         return {
           id: log.transactionHash,
           hash: proofHash,
-          content: content || "Protocol Anchored Proof",
+          content: inscribedContent,
           creator: creator,
           walletAddress: creator,
           txHash: log.transactionHash,
           timestamp: Number(timestamp) * 1000,
           deadline: '',
-          isRevealed: true, // Always show public words in Global Ledger
+          isRevealed: true, // Always show public words in Global Ledger now
           isAnonymous: false,
-          witnessStatement: "This proof was discovered directly on the Base protocol. The word is public and anchored forever.",
+          witnessStatement: "This proof was discovered directly on the Base protocol using the Inscription crawler.",
           category: 'Other',
           status: 'fulfilled'
         } as Receipt;
-      });
+      }));
 
       setGlobalReceipts(parsedLogs);
     } catch (err) {
