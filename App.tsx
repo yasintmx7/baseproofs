@@ -53,8 +53,8 @@ const App: React.FC = () => {
         });
 
       updateChainId();
-      fetchGlobalEvents();
     }
+    fetchGlobalEvents();
   }, []);
 
   const fetchGlobalEvents = async () => {
@@ -65,8 +65,8 @@ const App: React.FC = () => {
       const publicClient = createPublicClient({ chain: base, transport: http('https://mainnet.base.org') });
       const logs = await publicClient.getLogs({
         address: contractAddress as `0x${string}`,
-        event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, string content, uint256 timestamp)'),
-        fromBlock: 40827000n, // Contract was deployed at block 40827109
+        event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, uint256 timestamp)'),
+        fromBlock: 40827100n, // Start exactly at deployment
         toBlock: 'latest'
       });
 
