@@ -111,7 +111,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
       const data = encodeFunctionData({
         abi: contractArtifact.abi,
         functionName: 'anchorProof',
-        args: [hash as `0x${string}`]
+        args: [hash as `0x${string}`, content]
       });
 
       const tx = await ethereum.request({

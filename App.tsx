@@ -65,25 +65,26 @@ const App: React.FC = () => {
       const publicClient = createPublicClient({ chain: base, transport: http('https://mainnet.base.org') });
       const logs = await publicClient.getLogs({
         address: contractAddress as `0x${string}`,
-        event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, uint256 timestamp)'),
+        event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, string content, uint256 timestamp)'),
         fromBlock: 24700000n,
         toBlock: 'latest'
       });
 
       const parsedLogs: Receipt[] = logs.map((log: any) => {
-        const { creator, proofHash, timestamp } = log.args;
+        const { creator, proofHash, content, timestamp } = log.args;
+
         return {
           id: log.transactionHash,
           hash: proofHash,
-          content: "Protocol Anchored Proof",
-          creator: `Signer (${creator.slice(0, 6)}...)`,
+          content: content || "Protocol Anchored Proof",
+          creator: creator,
           walletAddress: creator,
           txHash: log.transactionHash,
           timestamp: Number(timestamp) * 1000,
           deadline: '',
-          isRevealed: false,
-          isAnonymous: true,
-          witnessStatement: "This proof was discovered directly on the Base protocol. The original content is hashed and anchored forever.",
+          isRevealed: true, // Always show public words in Global Ledger
+          isAnonymous: false,
+          witnessStatement: "This proof was discovered directly on the Base protocol. The word is public and anchored forever.",
           category: 'Other',
           status: 'fulfilled'
         } as Receipt;

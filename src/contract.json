@@ -17,6 +17,12 @@
         },
         {
           "indexed": false,
+          "internalType": "string",
+          "name": "content",
+          "type": "string"
+        },
+        {
+          "indexed": false,
           "internalType": "uint256",
           "name": "timestamp",
           "type": "uint256"
@@ -31,6 +37,11 @@
           "internalType": "bytes32",
           "name": "_proofHash",
           "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "_content",
+          "type": "string"
         }
       ],
       "name": "anchorProof",
