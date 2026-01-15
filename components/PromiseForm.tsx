@@ -11,7 +11,7 @@ import { encodeFunctionData } from 'viem';
 import contractArtifact from '../src/contract.json';
 
 // User can paste address here OR use VITE_PROOFS_CONTRACT_ADDRESS in .env
-const PROOFS_CONTRACT_ADDRESS = '';
+const PROOFS_CONTRACT_ADDRESS = '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06';
 
 // Target Chain ID determined by environment variable or defaults
 const PROOFS_ADDRESS_ENV = import.meta.env.VITE_PROOFS_CONTRACT_ADDRESS || PROOFS_CONTRACT_ADDRESS;
