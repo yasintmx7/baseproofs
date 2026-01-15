@@ -321,7 +321,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tighter text-white leading-tight">BaseProofs</h1>
-              <p className="text-[10px] text-blue-500/80 uppercase tracking-[0.2em] font-black">Oreymorey Protocol</p>
+              <p className="text-[10px] text-blue-500/80 uppercase tracking-[0.2em] font-black">BaseProof Protocol</p>
             </div>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-neutral-400 bg-white/5 rounded-xl hover:text-white transition-colors">
