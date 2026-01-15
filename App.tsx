@@ -66,7 +66,7 @@ const App: React.FC = () => {
       const logs = await publicClient.getLogs({
         address: contractAddress as `0x${string}`,
         event: parseAbiItem('event ProofAnchored(address indexed creator, bytes32 indexed proofHash, string content, uint256 timestamp)'),
-        fromBlock: 24700000n,
+        fromBlock: 40827000n, // Contract was deployed at block 40827109
         toBlock: 'latest'
       });
 
