@@ -128,7 +128,17 @@ const App: React.FC = () => {
           });
         } catch (e) { }
 
-        const finalDisplayName = inscribedName ? inscribedName : (isAnon ? "Anonymous" : (creator as string));
+        // Try to resolve Basename if no inscribed name and not anonymous
+        let basename = "";
+        if (!inscribedName && !isAnon) {
+          try {
+            // For production, you'd use a dedicated ENS/Basename resolver
+            // For now, we'll mimic the resolution or prepare the logic for it
+            // basename = await publicClient.getEnsName({ address: creator });
+          } catch (e) { }
+        }
+
+        const finalDisplayName = inscribedName ? inscribedName : (isAnon ? "Anonymous" : (basename || creator as string));
 
         return {
           id: log.transactionHash,
