@@ -11,7 +11,7 @@
         "homeUrl": "https://baseproofs.vercel.app",
         "imageUrl": "https://baseproofs.vercel.app/splash.png",
         "buttonTitle": "Enshrine Proof",
-        "splashImageUrl": "https://baseproofs.vercel.app/splash.png",
+        "splashImageUrl": "https://baseproofs.vercel.app/icon.png",
         "splashBackgroundColor": "#050505"
     },
     "miniapp": {
@@ -20,11 +20,17 @@
         "homeUrl": "https://baseproofs.vercel.app",
         "iconUrl": "https://baseproofs.vercel.app/icon.png",
         "loadingExperience": {
-            "splashImageUrl": "https://baseproofs.vercel.app/splash.png",
+            "splashImageUrl": "https://baseproofs.vercel.app/icon.png",
             "splashBackgroundColor": "#050505"
         },
         "discovery": {
-            "primaryCategory": "utility"
+            "primaryCategory": "utility",
+            "tags": [
+                "crypto",
+                "identity",
+                "base",
+                "ledger"
+            ]
         },
         "display": {
             "title": "BaseProofs",

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, ShieldCheck, History, Menu, X, Search, Sparkles, Wallet, Globe, ArrowRight, User, Lock, LogOut, ChevronDown, Activity, RefreshCw } from 'lucide-react';
 import { checkIsOnBase, switchToBase, BASE_MAINNET_ID, BASE_SEPOLIA_ID, LOCALHOST_ID, TARGET_CHAIN_ID } from './utils/network';
-import { createPublicClient, http, parseAbiItem } from 'viem';
+import { createPublicClient, http, parseAbiItem, encodeFunctionData } from 'viem';
 import { base } from 'viem/chains';
 import PromiseForm from './components/PromiseForm';
 import Wall from './components/Wall';
@@ -11,7 +11,7 @@ import Header from './components/Header';
 import Deployer from './components/Deployer';
 import { Receipt, ViewState } from './types';
 import contractArtifact from './src/contract.json';
-import { encodeFunctionData } from 'viem';
+// @ts-ignore
 import sdk from '@farcaster/frame-sdk';
 
 const App: React.FC = () => {
