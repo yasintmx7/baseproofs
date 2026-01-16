@@ -12,6 +12,7 @@ import Deployer from './components/Deployer';
 import { Receipt, ViewState } from './types';
 import contractArtifact from './src/contract.json';
 import { encodeFunctionData } from 'viem';
+import sdk from '@farcaster/frame-sdk';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('wall');
@@ -30,6 +31,9 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // Signal readiness to Farcaster/Base
+    sdk.actions.ready();
+
     const saved = localStorage.getItem('baseproofs_receipts_v1');
     if (saved) {
       try {
