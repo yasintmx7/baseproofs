@@ -1,29 +1,23 @@
+import { GoogleGenAI } from "@google/genai";
 
-import { GoogleGenAI, Type } from "ai-protocol";
-
-const apiKey = import.meta.env.VITE_AI_API_KEY || '';
-const provider = new GoogleGenAI({ apiKey });
+const apiKey = (import.meta as any).env?.VITE_AI_API_KEY || '';
+const client = new GoogleGenAI({ apiKey });
 
 export async function getWitnessDetails(promise: string) {
   try {
-    const response = await provider.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `You are the Grand Notary. Analyze this promise: "${promise}".
-      1. Write a 1-sentence witness statement of gravitas.
-      2. Provide 3 short, objective success metrics (milestones).`,
+    const response = await client.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `You are the Grand Notary. Analyze this promise: "${promise}".
+          Format your response as a JSON object with:
+          - statement: A 1-sentence witness statement of gravitas.
+          - milestones: An array of 3 short, objective success metrics.`
+        }]
+      }],
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            statement: { type: Type.STRING },
-            milestones: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
-          },
-          required: ["statement", "milestones"]
-        }
+        responseMimeType: "application/json"
       }
     });
 
@@ -39,16 +33,24 @@ export async function getWitnessDetails(promise: string) {
 
 export async function generateSeal(promise: string): Promise<string | undefined> {
   try {
-    const response = await provider.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: `A futuristic, high-contrast, minimalist circular logo or seal representing the concept: "${promise}". Cyberpunk aesthetic, neon blue and obsidian, professional digital emblem, symmetrical.` }]
-      }
+    const response = await client.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `A futuristic, high-contrast, minimalist circular logo or seal representing the concept: "${promise}". Cyberpunk aesthetic, neon blue and obsidian, professional digital emblem, symmetrical.`
+        }]
+      }]
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+    // Note: Standard text generation doesn't return images. 
+    // If the model supports image generation, it would be in response.candidates
+    const candidates = (response as any).candidates;
+    if (candidates && candidates[0]?.content?.parts) {
+      for (const part of candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
       }
     }
   } catch (error) {
@@ -59,10 +61,14 @@ export async function generateSeal(promise: string): Promise<string | undefined>
 
 export async function roastPromise(promise: string): Promise<string> {
   try {
-    const response = await provider.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Roast this promise: "${promise}". One punchy, cynical sentence.`,
-      config: { temperature: 0.9, maxOutputTokens: 60 }
+    const response = await client.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `Roast this promise: "${promise}". One punchy, cynical sentence.`
+        }]
+      }]
     });
     return response.text?.trim() || "Talk is cheap.";
   } catch {

@@ -105,7 +105,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
 
       // 6. Inscription: Package Name, Anonymous status, and Content
       const metadata = {
-        n: isAnonymous ? "" : name,
+        n: isAnonymous ? "" : creator,
         a: isAnonymous,
         c: content
       };
