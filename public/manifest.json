@@ -1,0 +1,21 @@
+{
+    "short_name": "BaseProofs",
+    "name": "BaseProofs | The Public Ledger of Human Word",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192"
+        },
+        {
+            "src": "/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512"
+        }
+    ],
+    "start_url": "/",
+    "background_color": "#050505",
+    "display": "standalone",
+    "theme_color": "#3b82f6",
+    "description": "Immutable, decentralized, and forever anchored word on the Base protocol."
+}

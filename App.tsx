@@ -138,7 +138,7 @@ const App: React.FC = () => {
           } catch (e) { }
         }
 
-        const finalDisplayName = inscribedName ? inscribedName : (isAnon ? "Anonymous" : (basename || creator as string));
+        const finalDisplayName = inscribedName ? inscribedName : (isAnon ? "Anonymous" : creator as string);
 
         return {
           id: log.transactionHash,
@@ -151,7 +151,7 @@ const App: React.FC = () => {
           deadline: '',
           isRevealed: true,
           isAnonymous: isAnon,
-          witnessStatement: "This proof was discovered directly on the Base protocol via the Oreymorey Protocol engine.",
+          witnessStatement: "This proof was discovered directly on the Base protocol.",
           category: 'Other',
           status: finalStatus
         } as Receipt;

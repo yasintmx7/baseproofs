@@ -1,0 +1,8 @@
+{
+    "name": "BaseProofs Protocol",
+    "version": "1.0.0",
+    "description": "The Public Ledger of Human Word",
+    "external_link": "https://baseproofs.io",
+    "image": "https://baseproofs.io/icon.png",
+    "manifest_standard": "onchain-v1"
+}

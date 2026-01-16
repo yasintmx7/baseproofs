@@ -1,20 +1,18 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# BaseProofs: The Public Ledger of Human Word
 
-# Run and deploy your AI Studio app
+BaseProofs is a decentralized protocol for enshrining promises and proofs on the Base blockchain. Every commitment is cryptographically hashed and forever anchored to the ledger.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Me2nTbXXGuWfExs1aP8HMuVc8UGniwrZ
+- **Immutable Proofs**: Once anchored, your word is permanent.
+- **On-Chain Verification**: Verify any proof hash directly on the Base protocol.
+- **Privacy First**: Optional anonymous enshrinement.
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+## Development
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Set your `VITE_AI_API_KEY` in `.env.local`
 3. Run the app:
    `npm run dev`
+

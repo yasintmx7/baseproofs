@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Receipt, ViewState } from '../types';
 import { keccak256 } from '../utils/crypto';
-import { getWitnessDetails, generateSeal } from '../services/geminiService';
+import { getWitnessDetails, generateSeal } from '../services/aiService';
 import { Shield, Loader2, Calendar, Plus, Sparkles, UserX, Wallet, Globe, ExternalLink, AlertTriangle } from 'lucide-react';
 import Header from './Header';
 
@@ -79,7 +79,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
       const hash = keccak256(content); // Using Keccak-256 as requested
 
       // 4. Notary
-      setSubmittingStep('Consulting Grand Notary...');
+      setSubmittingStep('Consulting AI Witness...');
       const [details, sealUrl] = await Promise.all([
         getWitnessDetails(content),
         generateSeal(content)

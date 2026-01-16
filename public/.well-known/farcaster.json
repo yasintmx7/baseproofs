@@ -1,0 +1,25 @@
+{
+    "accountAssociation": {
+        "header": "",
+        "payload": "",
+        "signature": ""
+    },
+    "miniapp": {
+        "version": "1",
+        "name": "BaseProofs",
+        "homeUrl": "https://baseproofs.vercel.app",
+        "iconUrl": "https://baseproofs.vercel.app/icon.png",
+        "loadingExperience": {
+            "splashImageUrl": "https://baseproofs.vercel.app/splash.png",
+            "splashBackgroundColor": "#050505"
+        },
+        "discovery": {
+            "primaryCategory": "utility"
+        },
+        "display": {
+            "title": "BaseProofs",
+            "description": "The Public Ledger of Human Word. Immutable, decentralized, and forever anchored.",
+            "tagline": "Enshrine your word on Base."
+        }
+    }
+}

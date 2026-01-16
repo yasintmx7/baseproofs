@@ -292,7 +292,7 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
                   <Info size={16} />
                   <span className="text-[10px] font-black uppercase tracking-widest">How it Works</span>
                   <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-neutral-900 border border-white/10 rounded-2xl text-[11px] text-neutral-400 opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none shadow-2xl z-40 leading-relaxed">
-                    Your promise is hashed (SHA-256) locally, then witnessed by our Grand Notary AI, and finally a proof transaction is sent to Base Mainnet.
+                    Your promise is hashed (Keccak-256) locally, then witnessed by our AI protocol, and finally a proof transaction is sent to Base Mainnet.
                   </div>
                 </div>
               </div>

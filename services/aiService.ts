@@ -1,12 +1,12 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "ai-protocol";
 
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+const apiKey = import.meta.env.VITE_AI_API_KEY || '';
+const provider = new GoogleGenAI({ apiKey });
 
 export async function getWitnessDetails(promise: string) {
   try {
-    const response = await ai.models.generateContent({
+    const response = await provider.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `You are the Grand Notary. Analyze this promise: "${promise}".
       1. Write a 1-sentence witness statement of gravitas.
@@ -39,7 +39,7 @@ export async function getWitnessDetails(promise: string) {
 
 export async function generateSeal(promise: string): Promise<string | undefined> {
   try {
-    const response = await ai.models.generateContent({
+    const response = await provider.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
         parts: [{ text: `A futuristic, high-contrast, minimalist circular logo or seal representing the concept: "${promise}". Cyberpunk aesthetic, neon blue and obsidian, professional digital emblem, symmetrical.` }]
@@ -59,7 +59,7 @@ export async function generateSeal(promise: string): Promise<string | undefined>
 
 export async function roastPromise(promise: string): Promise<string> {
   try {
-    const response = await ai.models.generateContent({
+    const response = await provider.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Roast this promise: "${promise}". One punchy, cynical sentence.`,
       config: { temperature: 0.9, maxOutputTokens: 60 }
