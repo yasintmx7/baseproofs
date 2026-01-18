@@ -109,6 +109,47 @@ const Docs: React.FC<DocsProps> = ({ onBack }) => {
                                     <li>• Wait for confirmation (1-2 seconds)</li>
                                 </ul>
                             </div>
+
+                            <div className="p-6 bg-white border border-slate-200 rounded-2xl">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">4</div>
+                                    <h3 className="text-xl font-bold text-slate-900">Privacy Controls (New!)</h3>
+                                </div>
+                                <ul className="text-slate-600 space-y-2 ml-11">
+                                    <li>• Go to "My Vault" to see all your proofs</li>
+                                    <li>• Click "Mask" to hide content from global viewers</li>
+                                    <li>• Masked content shows purple badge: "Hidden from Global Viewers"</li>
+                                    <li>• You can still see your content in your vault</li>
+                                    <li>• Mask state persists across refreshes and devices</li>
+                                    <li>• Click "Reveal" to make content public again</li>
+                                </ul>
+                            </div>
+
+                            <div className="p-6 bg-white border border-slate-200 rounded-2xl">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold">5</div>
+                                    <h3 className="text-xl font-bold text-slate-900">Verify Proofs</h3>
+                                </div>
+                                <ul className="text-slate-600 space-y-2 ml-11">
+                                    <li>• Click "Integrity Check" in sidebar</li>
+                                    <li>• Enter the original word/content OR paste the hash</li>
+                                    <li>• System automatically detects input type</li>
+                                    <li>• Get instant verification with creator info</li>
+                                    <li>• View full proof details and timestamp</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
+                            <h3 className="text-xl font-bold text-blue-900 mb-3">🎯 Pro Tips</h3>
+                            <ul className="text-blue-700 space-y-2 text-sm">
+                                <li>✅ Use the back-to-top button (bottom-right) when scrolling long lists</li>
+                                <li>✅ Mobile header stays visible when scrolling for easy navigation</li>
+                                <li>✅ Mask sensitive commitments to keep them private while still on-chain</li>
+                                <li>✅ Verify proofs by typing the exact content - no need for hash</li>
+                                <li>✅ Click Proofly logo to refresh and return to Global Ledger</li>
+                                <li>✅ Date picker opens when you click the calendar icon</li>
+                            </ul>
                         </div>
 
                         <div className="mt-8 p-6 bg-emerald-50 border border-emerald-200 rounded-2xl">
@@ -335,8 +376,8 @@ const Docs: React.FC<DocsProps> = ({ onBack }) => {
                                             key={section.id}
                                             onClick={() => setActiveSection(section.id)}
                                             className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${activeSection === section.id
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'text-slate-600 hover:bg-slate-100'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-slate-600 hover:bg-slate-100'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">

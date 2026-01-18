@@ -24,7 +24,18 @@ const Verifier: React.FC<VerifierProps> = ({ receipts }) => {
     // Smooth timing for better "processing" feel
     await new Promise(r => setTimeout(r, 1500));
 
-    const hash = keccak256(input.trim());
+    // Check if input is already a hash (starts with 0x and is 66 chars)
+    const trimmedInput = input.trim();
+    let hash: string;
+
+    if (trimmedInput.startsWith('0x') && trimmedInput.length === 66) {
+      // Input is already a hash
+      hash = trimmedInput;
+    } else {
+      // Input is content, hash it
+      hash = keccak256(trimmedInput);
+    }
+
     const matched = receipts.find(r => r.hash === hash);
 
     setResult({
@@ -54,7 +65,7 @@ const Verifier: React.FC<VerifierProps> = ({ receipts }) => {
                 setInput(e.target.value);
                 setResult(null);
               }}
-              placeholder="Paste the original word exactly as it was posten..."
+              placeholder="Enter the original word/content OR paste the hash (0x...)..."
               className="w-full bg-black/40 border border-white/5 rounded-[1.5rem] p-6 text-white text-base focus:ring-2 focus:ring-blue-500/50 outline-none transition-all min-h-[160px] resize-none"
             />
             <button
