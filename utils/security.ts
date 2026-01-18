@@ -1,5 +1,5 @@
 /**
- * Security Utility for BaseProofs
+ * Security Utility for Proofly
  * Handles input sanitization, cache validation, and XSS prevention.
  */
 

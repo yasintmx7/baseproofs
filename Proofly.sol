@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title BaseProofs - The Public Ledger of Human Word
+ * @title Proofly - The Public Ledger of Human Word
  * @dev Optimized for Base Mainnet. Permanent, immutable word anchoring.
  */
-contract BaseProofs {
+contract Proofly {
     // Protocol Manifest (on-chain metadata)
-    string public constant NAME = "BaseProofs";
+    string public constant NAME = "Proofly";
     string public constant VERSION = "1.0.0";
     string public constant DESCRIPTION = "The Public Ledger of Human Word";
     string public constant MANIFEST_URI = "ipfs://Qm... (Add final manifest IPFS hash if needed)";
@@ -49,4 +49,3 @@ contract BaseProofs {
         return (NAME, VERSION, DESCRIPTION);
     }
 }
-

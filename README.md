@@ -1,6 +1,6 @@
-# BaseProofs: The Public Ledger of Human Word
+# Proofly: The Public Ledger of Human Word
 
-BaseProofs is a decentralized protocol for enshrining promises and proofs on the Base blockchain. Every commitment is cryptographically hashed and forever anchored to the ledger.
+Proofly is a decentralized protocol for enshrining promises and proofs on the Base blockchain. Every commitment is cryptographically hashed and forever anchored to the ledger.
 
 ## Features
 

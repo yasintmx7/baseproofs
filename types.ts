@@ -22,7 +22,7 @@ export interface Receipt {
   milestones?: string[];
 }
 
-export type ViewState = 'wall' | 'create' | 'verify' | 'stats' | 'personal' | 'deploy';
+export type ViewState = 'wall' | 'create' | 'verify' | 'stats' | 'personal' | 'deploy' | 'docs';
 
 export interface VerificationResult {
   match: boolean;

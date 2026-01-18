@@ -43,7 +43,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
   const [txHash, setTxHash] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [templates, setTemplates] = useState(() => {
-    const saved = localStorage.getItem('baseproofs_custom_templates');
+    const saved = localStorage.getItem('proofly_custom_templates');
     return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
   });
   const [showAddTemplate, setShowAddTemplate] = useState(false);
@@ -54,7 +54,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
     if (!newTemplateText.trim()) return;
     const updated = [...templates, { text: newTemplateText, category: newTemplateCategory }];
     setTemplates(updated);
-    localStorage.setItem('baseproofs_custom_templates', JSON.stringify(updated));
+    localStorage.setItem('proofly_custom_templates', JSON.stringify(updated));
     setNewTemplateText('');
     setShowAddTemplate(false);
   };
@@ -62,7 +62,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
   const removeTemplate = (index: number) => {
     const updated = templates.filter((_: any, i: number) => i !== index);
     setTemplates(updated);
-    localStorage.setItem('baseproofs_custom_templates', JSON.stringify(updated));
+    localStorage.setItem('proofly_custom_templates', JSON.stringify(updated));
   };
 
   const handleSeal = async (e: React.FormEvent) => {
@@ -357,7 +357,7 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
                 className={`flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border transition-all ${isAnonymous ? 'bg-slate-900 border-slate-900 text-white shadow-md' : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'}`}
               >
                 {isAnonymous ? <Shield size={10} /> : <UserX size={10} />}
-                {isAnonymous ? 'Masked' : 'Go Anon'}
+                {isAnonymous ? 'Anonymous' : 'Mask Identity'}
               </button>
             </div>
             <input
@@ -370,20 +370,21 @@ const PromiseForm: React.FC<PromiseFormProps> = ({ onSave, setView, account, con
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[9px] uppercase tracking-[0.2em] font-black text-slate-500">Proof Horizon</label>
+            <div className="flex items-center justify-between">
+              <label className="text-[9px] uppercase tracking-[0.2em] font-black text-slate-500">Proof Horizon</label>
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                <Info size={10} /> Optional
+              </span>
+            </div>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
               <input
                 type="date"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
-                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl p-3 pl-10 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/10 outline-none [color-scheme:light] shadow-inner"
+                onClick={(e) => (e.target as any).showPicker?.()}
+                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl p-3 pl-10 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500/10 outline-none [color-scheme:light] shadow-inner cursor-pointer"
               />
-              {!deadline && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[8px] font-bold text-slate-400">
-                  <Info size={10} /> Optional
-                </div>
-              )}
             </div>
           </div>
         </div>

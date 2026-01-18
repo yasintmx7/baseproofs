@@ -35,7 +35,7 @@ const Deployer: React.FC<DeployerProps> = ({ onBack }) => {
             const abi = contractArtifact.abi; // Not strictly needed for deploy via eth_sendTransaction if we construct data manually, but good to have.
 
             // Actually, standard deployment is just sending a transaction with 'data' = bytecode (plus constructor args if any).
-            // BaseProofs has no constructor arguments.
+            // Proofly has no constructor arguments.
 
             const txHash = await ethereum.request({
                 method: 'eth_sendTransaction',
@@ -97,7 +97,7 @@ const Deployer: React.FC<DeployerProps> = ({ onBack }) => {
 
                 <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Deploy Contract</h2>
                 <p className="text-neutral-400 max-w-md mx-auto">
-                    Deploy `BaseProofs.sol` directly to the blockchain using your connected wallet. No private keys stored.
+                    Deploy `Proofly.sol` directly to the blockchain using your connected wallet. No private keys stored.
                 </p>
 
                 {error && (

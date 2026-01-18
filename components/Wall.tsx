@@ -162,12 +162,24 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
         </div>
 
         <div className="mb-6 relative z-10">
-          {receipt.isRevealed ? (
-            <p className={`${isFeatured ? 'text-xl md:text-2xl' : 'text-base md:text-lg'} text-slate-800 font-medium leading-tight italic tracking-tight`}>"{sanitize(receipt.content)}"</p>
+          {receipt.isRevealed || (isPersonalView && isOwner) ? (
+            <div className="relative">
+              <p className={`${isFeatured ? 'text-xl md:text-2xl' : 'text-base md:text-lg'} text-slate-800 font-medium leading-tight italic tracking-tight`}>"{sanitize(receipt.content)}"</p>
+              {!receipt.isRevealed && isPersonalView && isOwner && (
+                <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-purple-500/10 border border-purple-500/30 rounded-lg w-fit">
+                  <EyeOff size={14} className="text-purple-600" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-purple-600">Hidden from Global Viewers</span>
+                </div>
+              )}
+            </div>
           ) : (
-            <div className="flex flex-col gap-2.5 reveal-text opacity-30">
-              <div className="h-4 bg-white/5 rounded-full w-full" />
-              <div className="h-4 bg-white/5 rounded-full w-3/4" />
+            <div className="flex flex-col gap-2.5 opacity-50">
+              <div className="h-4 bg-purple-500/20 rounded-full w-full border border-purple-500/30" />
+              <div className="h-4 bg-purple-500/20 rounded-full w-3/4 border border-purple-500/30" />
+              <div className="flex items-center gap-2 mt-2 text-purple-600">
+                <EyeOff size={14} />
+                <span className="text-xs font-bold uppercase tracking-widest">Content Masked</span>
+              </div>
             </div>
           )}
         </div>
@@ -194,13 +206,15 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
 
         <div className="flex items-center justify-between pt-5 border-t border-white/5 relative z-10">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => onToggleReveal(receipt.id)}
-              className="text-[9px] font-black uppercase tracking-widest text-neutral-500 hover:text-blue-400 flex items-center gap-2 transition-colors"
-            >
-              {receipt.isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
-              {receipt.isRevealed ? 'Mask' : 'Reveal'}
-            </button>
+            {isPersonalView && (
+              <button
+                onClick={() => onToggleReveal(receipt.id)}
+                className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all px-3 py-1.5 rounded-lg border ${!receipt.isRevealed ? 'bg-purple-500/10 text-purple-600 border-purple-500/30' : 'text-neutral-500 hover:text-purple-600 border-transparent hover:border-purple-500/20'}`}
+              >
+                {receipt.isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
+                {receipt.isRevealed ? 'Mask' : 'Reveal'}
+              </button>
+            )}
             <button
               onClick={() => handleCopyLink(receipt.id)}
               className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all px-3 py-1.5 rounded-lg ${isCopied ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-slate-500/5 text-slate-500 hover:text-slate-900 border border-slate-200 hover:border-slate-300'}`}
@@ -268,52 +282,109 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
 
       {/* Hero Section for Onboarding */}
       {!isPersonalView && receipts.length > 0 && (
-        <div className="relative glass-card p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] overflow-hidden border-blue-500/20 group">
-          <div className="absolute top-0 right-0 w-64 h-64 md:w-80 md:h-80 bg-blue-600/10 blur-[80px] md:blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-600/20 transition-all duration-1000" />
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
-            <div className="flex-1 space-y-3 md:space-y-4 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest">
-                <ShieldCheck size={12} /> Protocol Identity: Proofly v1.0 • Built on Base
+        <div className="relative glass-card p-6 md:p-14 rounded-[2rem] md:rounded-[4rem] overflow-hidden border-slate-200 shadow-2xl shadow-blue-500/5 group mb-6 md:mb-12">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/[0.03] blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-6 md:gap-16">
+            <div className="flex-1 space-y-4 md:space-y-8 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 md:gap-3 px-3 py-1.5 md:px-4 md:py-2 bg-slate-50 border border-slate-200 rounded-full text-slate-500 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] shadow-sm">
+                <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                <span className="hidden md:inline">PROTOCOL V1.0 // BASE MAINNET // IMMUTABLE</span>
+                <span className="md:hidden text-[7.5px]">PROTO V1 // BASE MAINNET</span>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight italic uppercase">
-                Word is <span className="text-blue-500">Law.</span>
-              </h1>
-              <p className="text-neutral-400 text-sm md:text-lg max-w-xl leading-relaxed">
-                Enshrine your promises on the public ledger. Protocol-verified, cryptographically hashed, and forever anchored to history. No deletions. No excuses.
-              </p>
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 pt-1 md:pt-2">
-                <button onClick={() => setView?.('create')} className="bg-white text-black px-6 md:px-8 py-3.5 md:py-4 rounded-[1.2rem] md:rounded-[1.5rem] font-black text-[10px] md:text-[11px] uppercase tracking-[0.15em] md:tracking-[0.2em] hover:bg-blue-50 transition-all active:scale-95 shadow-xl md:shadow-2xl shadow-white/5 flex items-center gap-2">
-                  Enshrine Now <ArrowRight size={16} />
+
+              <div className="space-y-2 md:space-y-4">
+                <h1 className="text-3xl md:text-6xl font-black text-slate-900 tracking-tighter leading-[1.0] italic uppercase">
+                  Proofly — Immutable <br className="md:hidden" />
+                  <span className="text-blue-600 not-italic">On-Chain Proof.</span>
+                </h1>
+                <p className="text-slate-500 text-sm md:text-xl max-w-2xl leading-snug md:leading-relaxed font-medium">
+                  Cryptographically sealed. <br className="md:hidden" />
+                  Permanently anchored on Base.
+                </p>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center justify-center lg:justify-start gap-4 pt-2 md:pt-4">
+                <button
+                  onClick={() => setView?.('create')}
+                  className="w-full md:w-auto group relative bg-slate-900 text-white px-10 py-4 md:py-5 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-2xl shadow-slate-900/20 flex items-center justify-center gap-3"
+                >
+                  Generate Proof
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
-                <div className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors cursor-help group/info">
-                  <Info size={14} />
-                  <span className="text-[9px] font-black uppercase tracking-widest">How it Works</span>
-                  <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-white border border-slate-200 rounded-2xl text-[11px] text-slate-600 opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none shadow-2xl z-40 leading-relaxed shadow-slate-200/50">
-                    Your promise is hashed (Keccak-256) locally, witnessed by the protocol, and anchored forever on Base Mainnet.
+
+                <div className="hidden md:flex items-center gap-3 text-slate-400 hover:text-slate-900 transition-colors cursor-help group/info relative">
+                  <div className="w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center group-hover/info:border-blue-500 transition-colors">
+                    <Info size={16} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Protocol Audit</span>
+
+                  <div className="absolute bottom-full left-0 mb-4 w-72 p-6 bg-white border border-slate-200 rounded-[2rem] text-[12px] text-slate-600 opacity-0 group-hover/info:opacity-100 transition-all translate-y-2 group-hover/info:translate-y-0 pointer-events-none shadow-2xl z-40 leading-relaxed shadow-blue-500/10">
+                    <div className="font-black text-slate-900 uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <ShieldCheck size={14} className="text-blue-500" /> Integrity Guard
+                    </div>
+                    Every commitment is locally hashed using Keccak-256 before being anchored to Base. Once written, the protocol guarantees 100% data finality. No edits. No deletions.
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="hidden lg:flex w-56 h-56 items-center justify-center bg-white/[0.02] border border-white/10 rounded-[3rem] relative float-anim">
-              <div className="absolute inset-0 shimmer opacity-20" />
-              <Activity className="text-blue-500 animate-pulse" size={60} strokeWidth={1} />
-              <div className="absolute -bottom-3 -right-3 bg-blue-600 text-white p-3 rounded-2xl shadow-2xl shadow-blue-600/40">
-                <CheckCircle2 size={24} />
+
+              <div className="hidden md:flex items-center justify-center lg:justify-start gap-8 pt-4 opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700">
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  <Globe size={14} /> Public
+                </div>
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  <ShieldCheck size={14} /> Verifiable
+                </div>
+                <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  <Zap size={14} /> Immutable
+                </div>
               </div>
+            </div>
+
+            {/* Verification Stream Visual - Desktop Only */}
+            <div className="hidden lg:flex flex-col gap-4 w-64 p-8 bg-slate-50 border border-slate-200 rounded-[3rem] relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/[0.02] to-transparent pointer-events-none" />
+              <div className="space-y-6 relative z-10">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                    <span>Input Data</span>
+                    <span className="w-1 h-1 rounded-full bg-blue-500 animate-ping" />
+                  </div>
+                  <div className="h-1.5 bg-slate-200 rounded-full w-full overflow-hidden">
+                    <div className="h-full bg-blue-500 w-1/3 animate-[shimmer_2s_infinite]" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Keccak-256 Hash</div>
+                  <div className="p-2 bg-white border border-slate-200 rounded-lg mono text-[7px] text-blue-600 truncate">
+                    0x7465737...48617368
+                  </div>
+                </div>
+                <div className="flex justify-center py-2 animate-bounce">
+                  <ArrowRight size={20} className="text-slate-300 rotate-90" />
+                </div>
+                <div className="flex flex-col gap-3 items-center p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/40">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div className="text-[9px] font-black text-slate-900 uppercase tracking-tighter">Sealed on Proofly</div>
+                </div>
+              </div>
+              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/5 blur-3xl rounded-full" />
             </div>
           </div>
         </div>
       )}
 
       {/* Protocol Pulse Bar - SaaS Transparent White */}
-      <div className="flex flex-wrap items-center gap-4 md:gap-8 py-4 px-8 bg-white border border-slate-200 rounded-[1.5rem] shadow-sm">
+      <div className="hidden md:flex flex-wrap items-center gap-4 md:gap-8 py-4 px-8 bg-white border border-slate-200 rounded-[1.5rem] shadow-sm mb-6">
         <div className="flex items-center gap-2">
           <div className={`w-1.5 h-1.5 rounded-full ${isGlobalLoading ? 'bg-blue-500 animate-spin' : 'bg-green-500 animate-pulse'}`} />
           <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
             {isGlobalLoading ? 'Syncing...' : 'Live'}
           </span>
         </div>
-        <div className="h-4 w-px bg-slate-100 hidden md:block" />
+        <div className="h-4 w-px bg-slate-100" />
         <div className="flex items-center gap-4">
           <span className="text-[8px] uppercase text-slate-400 font-black tracking-widest">Total Words</span>
           <span className="text-base font-bold text-slate-900 mono">{stats.total.toString().padStart(3, '0')}</span>

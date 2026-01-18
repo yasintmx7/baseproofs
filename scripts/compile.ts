@@ -4,8 +4,8 @@ import path from 'path';
 // @ts-ignore
 import solc from 'solc';
 
-const CONTRACT_FILENAME = 'BaseProofs.sol';
-const CONTRACT_NAME = 'BaseProofs';
+const CONTRACT_FILENAME = 'Proofly.sol';
+const CONTRACT_NAME = 'Proofly';
 const OUTPUT_DIR = 'src';
 const OUTPUT_FILE = 'contract.json';
 
