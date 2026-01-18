@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="base:app_id" content="6968651e4991800a6d9d6420" />
+
+    <!-- Security Hardening -->
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.llamarpc.com https://1rpc.io https://mainnet.base.org https://base-mainnet.public.blastapi.io https://generativelanguage.googleapis.com;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <title>BaseProofs | The Public Ledger of Human Word</title>
+    <meta name="description" content="Immutable, decentralized, and forever anchored word on the Base protocol.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://baseproofs.vercel.app">
+    <meta property="og:title" content="BaseProofs">
+    <meta property="og:description" content="Enshrine your word on the immutable ledger of Base.">
+    <meta property="og:image" content="https://baseproofs.vercel.app/splash.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://baseproofs.vercel.app">
+    <meta property="twitter:title" content="BaseProofs">
+    <meta property="twitter:description" content="Enshrine your word on the immutable ledger of Base.">
+    <meta property="twitter:image" content="https://baseproofs.vercel.app/splash.png">
+
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* 60-30-10 Design Tokens */
+            --brand-navy: #0A192F;
+            /* 60% - Primary/Sidebar */
+            --brand-navy-accent: #112240;
+            --brand-gray: #F8FAFC;
+            /* 30% - Sections/Cards */
+            --brand-gray-dark: #E2E8F0;
+            --brand-blue: #0066FF;
+            /* 10% - CTAs/Action */
+            --brand-blue-glow: rgba(0, 102, 255, 0.15);
+
+            /* Status Colors */
+            --verification-green: #10B981;
+            /* Calm Green */
+            --error-red: #EF4444;
+            --warning-orange: #F59E0B;
+
+            /* Typography & Shadows */
+            --text-navy: #0F172A;
+            --text-slate: #475569;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-xl: 1.25rem;
+            --radius-2xl: 1.5rem;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--brand-gray);
+            color: var(--text-navy);
+            overflow-x: hidden;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* SaaS Structure & High Trust Cards */
+        .glass-card {
+            background: #FFFFFF !important;
+            backdrop-filter: none !important;
+            border: 1px solid var(--brand-gray-dark) !important;
+            box-shadow: var(--shadow-sm) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            color: var(--text-navy) !important;
+        }
+
+        .glass-card:hover {
+            box-shadow: var(--shadow-lg) !important;
+            border-color: var(--brand-blue) !important;
+            transform: translateY(-2px);
+        }
+
+        /* Primary SaaS Buttons */
+        .btn-primary {
+            background-color: var(--brand-blue) !important;
+            color: #FFFFFF !important;
+            padding: 1rem 2rem;
+            border-radius: 1rem;
+            font-weight: 700;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px 0 var(--brand-blue-glow);
+        }
+
+        .btn-primary:hover {
+            background-color: #0052CC !important;
+            box-shadow: 0 6px 20px 0 var(--brand-blue-glow);
+            transform: scale(1.01);
+        }
+
+        .btn-secondary {
+            background-color: #FFFFFF !important;
+            color: var(--text-slate) !important;
+            border: 1px solid var(--brand-gray-dark) !important;
+            padding: 1rem 2rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--brand-gray) !important;
+            color: var(--text-navy) !important;
+            border-color: var(--brand-blue) !important;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--brand-gray);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--brand-gray-dark);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-blue);
+        }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@farcaster/frame-sdk": "https://esm.sh/@farcaster/frame-sdk@^0.0.26"
+  }
+}
+</script>
+    <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
