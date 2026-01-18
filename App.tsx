@@ -149,7 +149,7 @@ const App: React.FC = () => {
               const bytes = new Uint8Array(rawHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
               const decoded = new TextDecoder().decode(bytes);
 
-              if (decoded.includes('STATUS:')) {
+              if (decoded.includes('STATUS:') || decoded.includes('MASK:') || decoded.includes('REVEAL:')) {
                 statusUpdates.push({ msg: decoded, creator });
                 return null;
               }
@@ -251,16 +251,31 @@ const App: React.FC = () => {
         }
 
         const finalResults = (parsedLogs.filter(r => r !== null) as Receipt[]).map(r => {
-          const update = statusUpdates.find(u =>
+          // Apply Status Updates (Fulfilled/Voided)
+          const statusUpdate = statusUpdates.find(u =>
             u.creator?.toLowerCase() === r.walletAddress?.toLowerCase() &&
             (u.msg.includes(`FULFILLED:${r.hash}`) || u.msg.includes(`VOIDED:${r.hash}`))
           );
-          if (update) {
-            r.status = update.msg.includes('FULFILLED') ? 'fulfilled' : 'voided';
+          if (statusUpdate) {
+            r.status = statusUpdate.msg.includes('FULFILLED') ? 'fulfilled' : 'voided';
           }
 
-          // Preserve isRevealed state if it exists
-          if (existingStates[r.id] !== undefined) {
+          // Apply Visibility Updates (Mask/Reveal) - Most recent transaction wins
+          const visibilityUpdates = statusUpdates
+            .filter(u =>
+              u.creator?.toLowerCase() === r.walletAddress?.toLowerCase() &&
+              (u.msg.includes(`MASK:${r.hash}`) || u.msg.includes(`REVEAL:${r.hash}`))
+            )
+            .sort((a, b) => {
+              const aTime = parseInt(a.msg.split(':').pop() || '0');
+              const bTime = parseInt(b.msg.split(':').pop() || '0');
+              return bTime - aTime;
+            });
+
+          if (visibilityUpdates.length > 0) {
+            r.isRevealed = visibilityUpdates[0].msg.startsWith('REVEAL:');
+          } else if (existingStates[r.id] !== undefined) {
+            // Fallback to local state ONLY if no on-chain visibility event exists
             r.isRevealed = existingStates[r.id];
           }
 
@@ -354,16 +369,59 @@ const App: React.FC = () => {
     }
   };
 
-  const toggleReveal = (id: string) => {
-    // Update local receipts
-    const newReceipts = receipts.map(r => r.id === id ? { ...r, isRevealed: !r.isRevealed } : r);
-    setReceipts(newReceipts);
-    localStorage.setItem('proofly_receipts_v1', JSON.stringify(newReceipts));
+  const toggleReveal = async (id: string) => {
+    const receipt = receipts.find(r => r.id === id) || globalReceipts.find(r => r.id === id);
+    if (!receipt || !account) return;
 
-    // Also update global receipts if the item exists there
-    const newGlobalReceipts = globalReceipts.map(r => r.id === id ? { ...r, isRevealed: !r.isRevealed } : r);
-    setGlobalReceipts(newGlobalReceipts);
-    localStorage.setItem('proofly_global_cache', JSON.stringify(newGlobalReceipts));
+    const newRevealState = !receipt.isRevealed;
+    const action = newRevealState ? 'REVEAL' : 'MASK';
+
+    // Inscribe the mask/reveal action on-chain
+    const maskUpdate = `${action}:${receipt.hash}:${Date.now()}`;
+    const hexUpdate = Array.from(new TextEncoder().encode(maskUpdate))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    // Create a unique random hash for this transaction
+    const uniqueMaskId = '0x' + Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    const data = (encodeFunctionData({
+      abi: contractArtifact.abi,
+      functionName: 'anchorProof',
+      args: [uniqueMaskId as `0x${string}`]
+    }) + hexUpdate) as `0x${string}`;
+
+    const ethereum = (window as any).ethereum;
+    if (ethereum) {
+      try {
+        await ethereum.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from: account,
+            to: '0x16175C96efA681D458f5dE4c1f2c3EbD9610cd06',
+            data: data,
+            value: '0x0'
+          }]
+        });
+
+        // Update local state immediately for better UX
+        const newReceipts = receipts.map(r => r.id === id ? { ...r, isRevealed: newRevealState } : r);
+        setReceipts(newReceipts);
+        localStorage.setItem('proofly_receipts_v1', JSON.stringify(newReceipts));
+
+        const newGlobalReceipts = globalReceipts.map(r => r.id === id ? { ...r, isRevealed: newRevealState } : r);
+        setGlobalReceipts(newGlobalReceipts);
+        localStorage.setItem('proofly_global_cache', JSON.stringify(newGlobalReceipts));
+
+        // Refresh global events after a short delay to pick up the new transaction
+        setTimeout(() => fetchGlobalEvents(), 3000);
+      } catch (error) {
+        console.error('Mask/Reveal transaction failed:', error);
+        alert('Transaction failed. Please try again.');
+      }
+    }
   };
 
   const renderConnectGate = (title: string, desc: string) => (
