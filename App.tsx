@@ -36,7 +36,7 @@ const App: React.FC = () => {
     // Signal readiness to Farcaster/Base
     sdk.actions.ready();
 
-    const saved = localStorage.getItem('baseproofs_receipts_v1');
+    const saved = localStorage.getItem('proofly_receipts_v1');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -75,7 +75,7 @@ const App: React.FC = () => {
     setIsGlobalLoading(true);
 
     // 1. Instant Cache Load
-    const cached = localStorage.getItem('baseproofs_global_cache');
+    const cached = localStorage.getItem('proofly_global_cache');
     if (cached && globalReceipts.length === 0) {
       try {
         const parsed = JSON.parse(cached);
@@ -188,7 +188,7 @@ const App: React.FC = () => {
         }).sort((a, b) => b.timestamp - a.timestamp);
 
         setGlobalReceipts(finalResults);
-        localStorage.setItem('baseproofs_global_cache', JSON.stringify(finalResults));
+        localStorage.setItem('proofly_global_cache', JSON.stringify(finalResults));
         success = true;
       } catch (err) {
         console.warn(`RPC Fail: ${rpcUrl}`);
@@ -226,14 +226,14 @@ const App: React.FC = () => {
   const saveReceipt = (receipt: Receipt) => {
     const newReceipts = [receipt, ...receipts];
     setReceipts(newReceipts);
-    localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
+    localStorage.setItem('proofly_receipts_v1', JSON.stringify(newReceipts));
   };
 
   const updateStatus = async (id: string, status: Receipt['status']) => {
     // 1. Update Local Storage
     const newReceipts = receipts.map(r => r.id === id ? { ...r, status } : r);
     setReceipts(newReceipts);
-    localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
+    localStorage.setItem('proofly_receipts_v1', JSON.stringify(newReceipts));
 
     // 2. Broadcast to Blockchain (Global Sync) - Low Gas (<$0.01)
     const proof = receipts.find(r => r.id === id);
@@ -277,7 +277,7 @@ const App: React.FC = () => {
   const toggleReveal = (id: string) => {
     const newReceipts = receipts.map(r => r.id === id ? { ...r, isRevealed: !r.isRevealed } : r);
     setReceipts(newReceipts);
-    localStorage.setItem('baseproofs_receipts_v1', JSON.stringify(newReceipts));
+    localStorage.setItem('proofly_receipts_v1', JSON.stringify(newReceipts));
   };
 
   const renderConnectGate = (title: string, desc: string) => (
@@ -291,7 +291,7 @@ const App: React.FC = () => {
 
       <div className="max-w-md text-center">
         <h2 className="text-3xl md:text-5xl font-black text-[var(--brand-navy)] mb-6 tracking-tighter leading-tight italic uppercase">
-          {title}
+          Proofly
         </h2>
         <p className="text-slate-500 text-lg mb-12 leading-relaxed">
           {desc}
@@ -309,7 +309,7 @@ const App: React.FC = () => {
           </button>
 
           <p className="text-[10px] text-neutral-600 font-black uppercase tracking-[0.3em]">
-            Immutable Ledger Protocol v1.0
+            Proofly Protocol v1.0
           </p>
         </div>
       </div>
@@ -354,8 +354,8 @@ const App: React.FC = () => {
               <ShieldCheck className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white leading-tight">BaseProofs</h1>
-              <p className="text-[10px] text-blue-400 uppercase tracking-[0.2em] font-black">Protocol Core</p>
+              <h1 className="text-xl font-black tracking-tight text-white leading-tight">Proofly</h1>
+              <p className="text-[10px] text-blue-400 uppercase tracking-[0.2em] font-black">Built on Base</p>
             </div>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-slate-400 bg-white/5 rounded-xl hover:text-white transition-all"><X size={24} /></button>
@@ -419,7 +419,13 @@ const App: React.FC = () => {
 
       <main className="flex-1 relative overflow-hidden h-screen flex flex-col">
         <div className="md:hidden flex items-center justify-between p-5 bg-white/80 backdrop-blur-xl border-b border-slate-200 z-30">
-          <div className="flex items-center gap-2" onClick={() => setView('wall')}><ShieldCheck className="text-blue-600" size={20} /><span className="font-bold text-base tracking-tighter text-slate-900">BaseProofs</span></div>
+          <div className="flex items-center gap-2" onClick={() => setView('wall')}>
+            <ShieldCheck className="text-blue-600" size={20} />
+            <div className="flex flex-col">
+              <span className="font-bold text-base tracking-tighter text-slate-900 leading-none">Proofly</span>
+              <span className="text-[7px] text-blue-500 font-black uppercase tracking-widest mt-0.5">Built on Base</span>
+            </div>
+          </div>
           <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all"><Menu size={20} /></button>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">

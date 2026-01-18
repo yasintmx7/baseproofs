@@ -126,9 +126,9 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
       >
         <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] opacity-10 transition-all duration-700 pointer-events-none ${receipt.status === 'fulfilled' ? 'bg-emerald-500' : receipt.status === 'voided' ? 'bg-red-500' : 'bg-blue-500'}`} />
 
-        <div className="flex items-center justify-between mb-6 relative z-10">
-          <div className="flex items-center gap-4">
-            <div className="relative">
+        <div className="flex items-start justify-between gap-3 mb-4 md:mb-6 relative z-10">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
+            <div className="relative shrink-0">
               {receipt.sealUrl ? (
                 <img src={receipt.sealUrl} className={`${isFeatured ? 'w-12 h-12' : 'w-9 h-9'} rounded-full border border-slate-200 bg-slate-100 object-cover shadow-sm transition-all`} alt="Seal" />
               ) : (
@@ -137,26 +137,26 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
               {receipt.status === 'fulfilled' && <CheckCircle size={10} className="absolute -bottom-0.5 -right-0.5 text-white bg-emerald-500 rounded-full p-0.5" />}
               {receipt.status === 'voided' && <XCircle size={10} className="absolute -bottom-0.5 -right-0.5 text-white bg-red-500 rounded-full p-0.5" />}
             </div>
-            <div className="flex flex-col">
-              <h4 className={`${isFeatured ? 'text-sm' : 'text-xs'} font-bold text-slate-900 leading-none mb-1.5 flex items-center gap-2`}>
+            <div className="flex flex-col min-w-0 overflow-hidden">
+              <h4 className={`${isFeatured ? 'text-sm' : 'text-[10px]'} font-bold text-slate-900 leading-none mb-1 flex items-center gap-2 truncate`}>
                 {receipt.isAnonymous ? 'Anonymous' : receipt.creator}
                 {isOwner && (
-                  <span className="flex items-center gap-1.5 bg-blue-500 text-white text-[7px] px-2 py-0.5 rounded-full uppercase font-black tracking-widest shadow-lg shadow-blue-500/20">
+                  <span className="shrink-0 flex items-center gap-1 bg-blue-500 text-white text-[7px] px-1.5 py-0.5 rounded-full uppercase font-black tracking-widest shadow-lg shadow-blue-500/20">
                     <User size={8} /> Me
                   </span>
                 )}
               </h4>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 truncate">
                 <span className="text-[8px] text-neutral-500 font-black mono tracking-tight">
                   {receipt.walletAddress.slice(0, 6)}...{receipt.walletAddress.slice(-4)}
                 </span>
-                <span className="text-[8px] text-neutral-600 font-bold tracking-widest uppercase">/ {receipt.category}</span>
+                <span className="text-[7px] text-neutral-400 font-bold tracking-widest uppercase opacity-60">/ {receipt.category}</span>
               </div>
             </div>
           </div>
           {!isFeatured && (
-            <div className={`text-[7px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg border transition-all ${receipt.status === 'fulfilled' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : receipt.status === 'voided' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
-              {receipt.status === 'active' ? 'Commitment Proof' : receipt.status === 'fulfilled' ? 'Verified Enshrinement' : 'Entry Voided'}
+            <div className={`shrink-0 text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border transition-all whitespace-nowrap ${receipt.status === 'fulfilled' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600' : receipt.status === 'voided' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+              {receipt.status === 'active' ? 'Commitment' : receipt.status === 'fulfilled' ? 'Verified' : 'Voided'}
             </div>
           )}
         </div>
@@ -273,7 +273,7 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-10">
             <div className="flex-1 space-y-3 md:space-y-4 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-[8px] md:text-[9px] font-black uppercase tracking-widest">
-                <ShieldCheck size={12} /> Protocol Identity: BaseProofs v1.0
+                <ShieldCheck size={12} /> Protocol Identity: Proofly v1.0 • Built on Base
               </div>
               <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-tight italic uppercase">
                 Word is <span className="text-blue-500">Law.</span>
@@ -289,7 +289,7 @@ const Wall: React.FC<WallProps> = ({ receipts, onToggleReveal, onUpdateStatus, s
                   <Info size={14} />
                   <span className="text-[9px] font-black uppercase tracking-widest">How it Works</span>
                   <div className="absolute bottom-full left-0 mb-4 w-64 p-4 bg-white border border-slate-200 rounded-2xl text-[11px] text-slate-600 opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none shadow-2xl z-40 leading-relaxed shadow-slate-200/50">
-                    Your promise is hashed (Keccak-256) locally, witnessed by the protocol, and anchored to Base Mainnet.
+                    Your promise is hashed (Keccak-256) locally, witnessed by the protocol, and anchored forever on Base Mainnet.
                   </div>
                 </div>
               </div>
